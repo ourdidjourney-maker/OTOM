@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observational Tool of Math (OTOM) </title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            overflow: hidden;
+        }
+       
+        #controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+       
+        #infoSection {
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+            overflow: hidden;
+        }
+       
+        #toggleInfoBtn {
+            transition: transform 0.2s ease;
+        }
+       
+        #toggleInfoBtn:hover {
+            transform: scale(1.1);
+        }
+       
+        #imageList {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 250px;
+            max-height: 600px;
+            overflow-y: auto;
+            cursor: move;
+        }
+       
+        #imageList.dragging {
+            cursor: grabbing;
+            opacity: 0.9;
+        }
+       
+        #imageList h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 8px;
+            cursor: move;
+            user-select: none;
+        }
+       
+        #imageList h3::before {
+            content: '⋮⋮ ';
+            color: #999;
+            margin-right: 5px;
+        }
+       
+        .image-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 4px solid;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+       
+        .image-item:hover {
+            background: #e8f5e9;
+        }
+       
+        .image-item.selected {
+            background: #c8e6c9;
+            font-weight: bold;
+        }
+       
+        .image-item.unnamed {
+            color: #999;
+            font-style: italic;
+        }
+       
+        .image-number {
+            display: inline-block;
+            background: #2196F3;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+       
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            font-size: 14px;
+        }
+       
+        button:hover {
+            background: #45a049;
+        }
+       
+        #uploadBtn {
+            background: #2196F3;
+        }
+       
+        #uploadBtn:hover {
+            background: #0b7dda;
+        }
+       
+        #connectBtn {
+            background: #FF9800;
+        }
+       
+        #connectBtn:hover {
+            background: #e68900;
+        }
+       
+        #connectBtn.active {
+            background: #F44336;
+        }
+       
+        #simultaneousBtn {
+            background: #673AB7;
+        }
+       
+        #simultaneousBtn:hover {
+            background: #5E35B1;
+        }
+       
+        #simultaneousBtn.active {
+            background: #E91E63;
+        }
+       
+        #canvasContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            cursor: grab;
+        }
+       
+        #canvasContainer.grabbing {
+            cursor: grabbing;
+        }
+       
+        #canvasContainer.connecting {
+            cursor: crosshair;
+        }
+       
+        #canvasContainer.resizing {
+            cursor: nwse-resize;
+        }
+       
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+       
+        .zoom-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+       
+        #nameModal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 2000;
+        }
+       
+        #nameModal input {
+            padding: 8px;
+            margin: 10px 0;
+            width: 250px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+       
+        #nameModal button {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">Upload Coding Block/Element</button>
+        <button id="connectBtn" onclick="toggleConnectMode()">Connect Block Elements</button>
+        <button id="simultaneousBtn" onclick="toggleSimultaneousMode()">Simultaneous Execution / Multithread</button>
+        <button onclick="undo()" style="background: #FFC107;">↶ Undo (Ctrl+Z)</button>
+        <button onclick="redo()" style="background: #FFC107;">↷ Redo (Ctrl+Shift+Z)</button>
+        <button onclick="zoomIn()">Zoom In (+)</button>
+        <button onclick="zoomOut()">Zoom Out (-)</button>
+        <button onclick="resetView()">Reset View</button>
+        <button onclick="toggleFullscreen()" style="background: #FF5722;">⛶ Fullscreen</button>
+        <button onclick="saveEngine()" style="background: #9C27B0;">Save Engine</button>
+        <button onclick="document.getElementById('loadInput').click()" style="background: #00BCD4;">Load Engine</button>
+        <button onclick="resetEngine()" style="background: #F44336;">🔄 Reset Engine</button>
+        <button id="toggleInfoBtn" onclick="toggleInfoSection()" style="float: right; font-size: 16px; padding: 4px 10px; background: #607D8B; margin-top: 5px;" title="Show/Hide Info">▼</button>
+        <input type="file" id="loadInput" accept=".json" style="display: none;">
+       
+        <!-- Collapsible Info Section -->
+        <div id="infoSection">
+            <div class="zoom-info">Zoom: <span id="zoomLevel">100%</span></div>
+            <div class="zoom-info">Block Elements: <span id="imageCount">0</span></div>
+            <div class="zoom-info">Number Of Logic Lines: <span id="connectionCount">0</span></div>
+            <div class="zoom-info" id="connectInfo" style="display: none; color: #FF9800; font-weight: bold;">
+                Click images to connect them
+            </div>
+            <div class="zoom-info" id="simultaneousInfo" style="display: none; color: #673AB7; font-weight: bold;">
+                Click connection numbers to mark simultaneous
+            </div>
+            <div class="zoom-info" style="color: #666; margin-top: 10px;">
+                💡 Hold Shift and drag corner to resize
+            </div>
+            <div class="zoom-info" style="color: #9C27B0; margin-top: 5px;">
+                📋 Hold Alt and drag to duplicate
+            </div>
+            <div class="zoom-info" style="color: #4CAF50; margin-top: 5px;">
+                🎯 Drag step indicators reposition them and to bend logic lines
+            </div>
+            <div class="zoom-info" style="color: #2196F3; margin-top: 5px;">
+                🌊 Ctrl+Click step indicator to toggle curved/bent logic lines
+            </div>
+            <div class="zoom-info" style="color: #000000; margin-top: 5px; font-weight: bold;">
+                ⚫ Double-click empty canvas to create vector </div> <div class="zoom-info" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
+                <strong style="color: #333;">📊 Data String:</strong>
+                <div id="dataString" style="font-family: 'Courier New', monospace; font-size: 11px; color: #333; margin-top: 5px; max-height: 50px; overflow-y: auto; background: #f9f9f9; padding: 8px; border-radius: 4px; line-height: 1.6;">
+                    No connections yet
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <div id="imageList">
+        <h3>📋 Block Elements</h3>
+        <div id="imageListContent">
+            <div style="color: #999; font-size: 13px; text-align: center; padding: 20px;">
+                No images uploaded yet
+            </div>
+        </div>
+    </div>
+   
+    <div id="canvasContainer">
+        <canvas id="canvas"></canvas>
+    </div>
+   
+    <div id="nameModal">
+        <h3 style="margin-top: 0;">Name Coding Block/Element:</h3>
+       
+        <label style="display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555;">
+            Display Name (shown on canvas):
+        </label>
+        <input type="text" id="nameInput" placeholder="e.g., HTML, Action, Move" maxlength="30" style="width: 100%; box-sizing: border-box;">
+       
+        <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555;">
+            Data String Name (shown in output):
+        </label>
+        <textarea id="fullNameInput"
+                  placeholder="e.g., HTML Parser Component (v2.1) or full code block"
+                  rows="8"
+                  style="width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: 'Courier New', monospace; resize: vertical;"></textarea>
+       
+        <div style="margin-top: 15px;">
+            <button onclick="saveName()">Save</button>
+            <button onclick="closeNameModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvasContainer');
+        const fileInput = document.getElementById('fileInput');
+        const connectBtn = document.getElementById('connectBtn');
+        const connectInfo = document.getElementById('connectInfo');
+       
+        let images = [];
+        let connections = []; // Array of {from: imageId, to: imageId, number: N, circleX: null, circleY: null, curved: false}
+        let connectionCounter = 1; // Track connection numbers
+        let selectedImage = null;
+        let isDragging = false;
+        let isDuplicating = false;
+        let duplicateSource = null;
+        let isDraggingCircle = false;
+        let draggedConnection = null;
+        let isRotating = false;
+        let isResizing = false;
+        let isPanning = false;
+        let dragStart = { x: 0, y: 0 };
+        let rotateStart = 0;
+        let resizeStart = { width: 0, height: 0, x: 0, y: 0 };
+        let connectMode = false;
+        let connectFrom = null;
+        let simultaneousMode = false;
+        let imageToName = null;
+       
+        // Undo system
+        let historyStack = [];
+        let historyIndex = -1;
+        const MAX_HISTORY = 50;
+       
+        // OPTIMIZATION: requestAnimationFrame throttling
+        let drawScheduled = false;
+       
+        const nameModal = document.getElementById('nameModal');
+        const nameInput = document.getElementById('nameInput');
+        const fullNameInput = document.getElementById('fullNameInput');
+        const simultaneousBtn = document.getElementById('simultaneousBtn');
+        const simultaneousInfo = document.getElementById('simultaneousInfo');
+       
+        // Image list panel dragging
+        const imageListPanel = document.getElementById('imageList');
+        let isPanelDragging = false;
+        let panelDragStart = { x: 0, y: 0 };
+        let panelPosition = { x: window.innerWidth - 290, y: 20 }; // Start position away from controls
+       
+        // Camera/viewport properties
+        let camera = {
+            x: 0,
+            y: 0,
+            zoom: 1
+        };
+       
+        // ========================================
+        // 🚀 PERFORMANCE FIX: VIEWPORT-SIZED CANVAS
+        // ========================================
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            draw();
+        }
+       
+        resizeCanvas();
+       
+        // Handle window resizing
+        window.addEventListener('resize', resizeCanvas);
+       
+        // Set initial panel position
+        imageListPanel.style.left = panelPosition.x + 'px';
+        imageListPanel.style.top = panelPosition.y + 'px';
+        imageListPanel.style.right = 'auto';
+       
+        // Panel dragging functionality
+        imageListPanel.addEventListener('mousedown', (e) => {
+            // Only start dragging if clicking on the header (h3) or the panel itself, not the content
+            if (e.target.tagName === 'H3' || e.target.id === 'imageList') {
+                isPanelDragging = true;
+                panelDragStart = {
+                    x: e.clientX - panelPosition.x,
+                    y: e.clientY - panelPosition.y
+                };
+                imageListPanel.classList.add('dragging');
+                e.preventDefault(); // Prevent text selection
+            }
+        });
+       
+        document.addEventListener('mousemove', (e) => {
+            if (isPanelDragging) {
+                panelPosition.x = e.clientX - panelDragStart.x;
+                panelPosition.y = e.clientY - panelDragStart.y;
+               
+                // Keep panel within window bounds
+                panelPosition.x = Math.max(0, Math.min(panelPosition.x, window.innerWidth - imageListPanel.offsetWidth));
+                panelPosition.y = Math.max(0, Math.min(panelPosition.y, window.innerHeight - 100));
+               
+                imageListPanel.style.left = panelPosition.x + 'px';
+                imageListPanel.style.top = panelPosition.y + 'px';
+            }
+        });
+       
+        document.addEventListener('mouseup', () => {
+            if (isPanelDragging) {
+                isPanelDragging = false;
+                imageListPanel.classList.remove('dragging');
+            }
+        });
+       
+        // File upload handling
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const newImage = {
+                            img: img,
+                            x: 400 + images.length * 50,
+                            y: 400 + images.length * 50,
+                            width: img.width * 0.6,
+                            height: img.height * 0.6,
+                            rotation: 0,
+                            id: Date.now(),
+                            name: '',        // Display name (short, shown on canvas)
+                            fullName: '',    // Full name (detailed, shown in data string)
+                            isDot: false     // NEW: Flag for dot blocks
+                        };
+                        images.push(newImage);
+                        updateImageCount();
+                        draw();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            fileInput.value = '';
+        });
+       
+        function updateImageCount() {
+            document.getElementById('imageCount').textContent = images.length;
+            updateImageList();
+        }
+       
+        function updateImageList() {
+            const listContent = document.getElementById('imageListContent');
+           
+            if (images.length === 0) {
+                listContent.innerHTML = `
+                    <div style="color: #999; font-size: 13px; text-align: center; padding: 20px;">
+                        No images uploaded yet
+                    </div>
+                `;
+                return;
+            }
+           
+            listContent.innerHTML = '';
+           
+            images.forEach((image, index) => {
+                const item = document.createElement('div');
+                item.className = 'image-item' + (image === selectedImage ? ' selected' : '') +
+                                 (!image.name ? ' unnamed' : '');
+                item.style.borderLeftColor = getColorForIndex(index);
+               
+                const numberSpan = document.createElement('span');
+                numberSpan.className = 'image-number';
+                numberSpan.textContent = (index + 1);
+               
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = image.name || (image.isDot ? 'Unnamed Dot' : 'Unnamed Block');
+               
+                item.appendChild(numberSpan);
+                item.appendChild(nameSpan);
+               
+                // Click to select the image
+                item.addEventListener('click', () => {
+                    if (!isPanelDragging) { // Only select if not dragging
+                        selectedImage = image;
+                        // Center the camera on the selected image
+                        const rect = canvas.getBoundingClientRect();
+                        camera.x = rect.width / 2 - image.x * camera.zoom;
+                        camera.y = rect.height / 2 - image.y * camera.zoom;
+                        updateImageList();
+                        draw();
+                    }
+                });
+               
+                // Prevent item clicks from starting panel drag
+                item.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                });
+               
+                listContent.appendChild(item);
+            });
+        }
+       
+        function getColorForIndex(index) {
+            const colors = ['#2196F3', '#4CAF50', '#FF9800', '#F44336', '#9C27B0', '#00BCD4', '#FF5722', '#795548'];
+            return colors[index % colors.length];
+        }
+       
+        function updateConnectionCount() {
+            document.getElementById('connectionCount').textContent = connections.length;
+            updateDataString();
+        }
+       
+        function updateDataString() {
+            const dataStringDiv = document.getElementById('dataString');
+           
+            if (connections.length === 0) {
+                dataStringDiv.textContent = 'No connections yet';
+                return;
+            }
+           
+            // Sort connections by number
+            const sortedConnections = [...connections].sort((a, b) => a.number - b.number);
+           
+            // Build data string lines
+            const lines = [];
+           
+            sortedConnections.forEach(conn => {
+                const fromImg = images.find(img => img.id === conn.from);
+                const toImg = images.find(img => img.id === conn.to);
+               
+                if (fromImg && toImg) {
+                    // Use fullName for data string, fall back to name, then 'Unnamed Block'
+                    const fromName = fromImg.fullName || fromImg.name || (fromImg.isDot ? 'Unnamed Dot' : 'Unnamed Block');
+                    const toName = toImg.fullName || toImg.name || (toImg.isDot ? 'Unnamed Dot' : 'Unnamed Block');
+                    const stepNum = conn.simultaneous ? `[${conn.number}|S]` : `[${conn.number}]`;
+                    const color = conn.simultaneous ? '#673AB7' : '#2196F3';
+                   
+                    lines.push({
+                        text: `${stepNum} ${fromName} → ${toName}`,
+                        color: color,
+                        number: conn.number
+                    });
+                }
+            });
+           
+            // Clear and rebuild
+            dataStringDiv.innerHTML = '';
+           
+            lines.forEach(line => {
+                const lineDiv = document.createElement('div');
+                lineDiv.style.color = line.color;
+                lineDiv.textContent = line.text;
+                dataStringDiv.appendChild(lineDiv);
+            });
+        }
+       
+        function updateZoomLevel() {
+            document.getElementById('zoomLevel').textContent = Math.round(camera.zoom * 100) + '%';
+        }
+       
+        function toggleConnectMode() {
+            connectMode = !connectMode;
+            if (connectMode) {
+                // Turn off simultaneous mode if it's on
+                if (simultaneousMode) {
+                    toggleSimultaneousMode();
+                }
+                connectBtn.classList.add('active');
+                connectBtn.textContent = 'Cancel Connect';
+                connectInfo.style.display = 'block';
+                container.classList.add('connecting');
+            } else {
+                connectBtn.classList.remove('active');
+                connectBtn.textContent = 'Connect Block Elements';
+                connectInfo.style.display = 'none';
+                container.classList.remove('connecting');
+            }
+            draw();
+        }
+       
+        function toggleSimultaneousMode() {
+            simultaneousMode = !simultaneousMode;
+            if (simultaneousMode) {
+                // Turn off connect mode if it's on
+                if (connectMode) {
+                    toggleConnectMode();
+                }
+                simultaneousBtn.classList.add('active');
+                simultaneousBtn.textContent = 'Cancel Simultaneous';
+                simultaneousInfo.style.display = 'block';
+                container.style.cursor = 'pointer';
+            } else {
+                simultaneousBtn.classList.remove('active');
+                simultaneousBtn.textContent = 'Simultaneous Execution';
+                simultaneousInfo.style.display = 'none';
+                container.style.cursor = 'grab';
+            }
+            draw();
+        }
+       
+        function toggleInfoSection() {
+            const infoSection = document.getElementById('infoSection');
+            const toggleBtn = document.getElementById('toggleInfoBtn');
+           
+            if (infoSection.style.display === 'none') {
+                infoSection.style.display = 'block';
+                toggleBtn.textContent = '▼';
+                toggleBtn.title = 'Hide Info';
+            } else {
+                infoSection.style.display = 'none';
+                toggleBtn.textContent = '▲';
+                toggleBtn.title = 'Show Info';
+            }
+        }
+       
+        function openNameModal(image) {
+            imageToName = image;
+            nameInput.value = image.name || '';
+            fullNameInput.value = image.fullName || '';
+            nameModal.style.display = 'block';
+            nameInput.focus();
+        }
+       
+        function closeNameModal() {
+            nameModal.style.display = 'none';
+            imageToName = null;
+        }
+       
+        function saveName() {
+            if (imageToName) {
+                imageToName.name = nameInput.value.trim();
+                imageToName.fullName = fullNameInput.value.trim();
+                saveState();
+                updateImageList();
+                updateDataString();
+                draw();
+            }
+            closeNameModal();
+        }
+       
+        // Handle Enter key in name inputs
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                // Move to full name field if empty, otherwise save
+                if (!fullNameInput.value.trim()) {
+                    fullNameInput.focus();
+                } else {
+                    saveName();
+                }
+            } else if (e.key === 'Escape') {
+                closeNameModal();
+            }
+        });
+       
+        fullNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                saveName();
+            } else if (e.key === 'Escape') {
+                closeNameModal();
+            }
+        });
+       
+        // ========================================
+        // 🔄 RESET ENGINE FUNCTION
+        // ========================================
+        function resetEngine() {
+            if (confirm('⚠️ Reset entire engine? This will clear everything!')) {
+                images = [];
+                connections = [];
+                selectedImage = null;
+                connectFrom = null;
+                connectionCounter = 1;
+                camera = { x: 0, y: 0, zoom: 1 };
+                historyStack = [];
+                historyIndex = -1;
+               
+                // Turn off any active modes
+                if (connectMode) toggleConnectMode();
+                if (simultaneousMode) toggleSimultaneousMode();
+               
+                updateImageCount();
+                updateConnectionCount();
+                updateZoomLevel();
+                draw();
+               
+                alert('✅ Engine reset successfully!');
+            }
+        }
+       
+        // ========================================
+        // UNDO/REDO SYSTEM
+        // ========================================
+        function saveState() {
+            // Remove any "future" states if we're in the middle of history
+            if (historyIndex < historyStack.length - 1) {
+                historyStack = historyStack.slice(0, historyIndex + 1);
+            }
+           
+            // Create state snapshot
+            const state = {
+                images: images.map(img => ({
+                    id: img.id,
+                    name: img.name,
+                    fullName: img.fullName,
+                    x: img.x,
+                    y: img.y,
+                    width: img.width,
+                    height: img.height,
+                    rotation: img.rotation,
+                    isDot: img.isDot || false,
+                    imageData: img.isDot ? null : img.img.src
+                })),
+                connections: JSON.parse(JSON.stringify(connections)),
+                connectionCounter: connectionCounter
+            };
+           
+            historyStack.push(state);
+           
+            // Limit history size
+            if (historyStack.length > MAX_HISTORY) {
+                historyStack.shift();
+            } else {
+                historyIndex++;
+            }
+        }
+       
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreState(historyStack[historyIndex]);
+            }
+        }
+       
+        function redo() {
+            if (historyIndex < historyStack.length - 1) {
+                historyIndex++;
+                restoreState(historyStack[historyIndex]);
+            }
+        }
+       
+        function restoreState(state) {
+            // Clear current state
+            images = [];
+            connections = state.connections;
+            connectionCounter = state.connectionCounter;
+            selectedImage = null;
+           
+            // Restore images (including dots)
+            let loadedCount = 0;
+            if (state.images.length === 0) {
+                updateImageCount();
+                updateConnectionCount();
+                updateImageList();
+                draw();
+                return;
+            }
+           
+            state.images.forEach(imgData => {
+                if (imgData.isDot) {
+                    // Restore dot (no image loading needed)
+                    images.push({
+                        img: null,
+                        id: imgData.id,
+                        name: imgData.name,
+                        fullName: imgData.fullName,
+                        x: imgData.x,
+                        y: imgData.y,
+                        width: imgData.width,
+                        height: imgData.height,
+                        rotation: imgData.rotation,
+                        isDot: true
+                    });
+                    loadedCount++;
+                    if (loadedCount === state.images.length) {
+                        updateImageCount();
+                        updateConnectionCount();
+                        updateImageList();
+                        draw();
+                    }
+                } else {
+                    // Restore image block
+                    const img = new Image();
+                    img.onload = () => {
+                        images.push({
+                            img: img,
+                            id: imgData.id,
+                            name: imgData.name,
+                            fullName: imgData.fullName,
+                            x: imgData.x,
+                            y: imgData.y,
+                            width: imgData.width,
+                            height: imgData.height,
+                            rotation: imgData.rotation,
+                            isDot: false
+                        });
+                        loadedCount++;
+                        if (loadedCount === state.images.length) {
+                            updateImageCount();
+                            updateConnectionCount();
+                            updateImageList();
+                            draw();
+                        }
+                    };
+                    img.src = imgData.imageData;
+                }
+            });
+        }
+       
+        // Transform screen coordinates to canvas coordinates
+        function screenToCanvas(screenX, screenY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (screenX - rect.left - camera.x) / camera.zoom,
+                y: (screenY - rect.top - camera.y) / camera.zoom
+            };
+        }
+       
+        // Check if point is inside an image
+        function isPointInImage(x, y, image) {
+            const dx = x - image.x;
+            const dy = y - image.y;
+            const cos = Math.cos(-image.rotation);
+            const sin = Math.sin(-image.rotation);
+            const rotatedX = dx * cos - dy * sin;
+            const rotatedY = dx * sin + dy * cos;
+           
+            return Math.abs(rotatedX) < image.width / 2 &&
+                   Math.abs(rotatedY) < image.height / 2;
+        }
+       
+        // Check if point is near rotation handle
+        function isPointInRotateHandle(x, y, image) {
+            const angle = image.rotation;
+            const handleDistance = image.height / 2 + 30;
+            const handleX = image.x + Math.sin(angle) * handleDistance;
+            const handleY = image.y - Math.cos(angle) * handleDistance;
+            // OPTIMIZATION: Squared distance comparison
+            const dx = x - handleX;
+            const dy = y - handleY;
+            const distanceSquared = dx * dx + dy * dy;
+            return distanceSquared < 225; // 15^2 = 225
+        }
+       
+        // Check if point is near resize handle (bottom-right corner)
+        function isPointInResizeHandle(x, y, image) {
+            const cos = Math.cos(image.rotation);
+            const sin = Math.sin(image.rotation);
+            const cornerX = image.x + (image.width / 2) * cos - (image.height / 2) * sin;
+            const cornerY = image.y + (image.width / 2) * sin + (image.height / 2) * cos;
+            // OPTIMIZATION: Squared distance comparison
+            const dx = x - cornerX;
+            const dy = y - cornerY;
+            const distanceSquared = dx * dx + dy * dy;
+            return distanceSquared < 225; // 15^2 = 225
+        }
+       
+        function getImageAtPoint(x, y) {
+            for (let i = images.length - 1; i >= 0; i--) {
+                if (isPointInImage(x, y, images[i])) {
+                    return images[i];
+                }
+            }
+            return null;
+        }
+       
+        // Mouse down event
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = screenToCanvas(e.clientX, e.clientY);
+           
+            // Check if clicking on a connection circle to drag it (priority check)
+            if (!connectMode && !simultaneousMode && e.button === 0) { // Left click only
+                for (const conn of connections) {
+                    const fromImg = images.find(img => img.id === conn.from);
+                    const toImg = images.find(img => img.id === conn.to);
+                    if (fromImg && toImg) {
+                        // Calculate circle position
+                        let midX, midY;
+                        if (conn.circleX !== undefined && conn.circleX !== null) {
+                            midX = conn.circleX;
+                            midY = conn.circleY;
+                        } else {
+                            midX = (fromImg.x + toImg.x) / 2;
+                            midY = (fromImg.y + toImg.y) / 2;
+                        }
+                       
+                        // OPTIMIZATION: Compare squared distances to avoid sqrt
+                        const circleRadius = 16 / camera.zoom;
+                        const dx = pos.x - midX;
+                        const dy = pos.y - midY;
+                        const distanceSquared = dx * dx + dy * dy;
+                       
+                        if (distanceSquared < circleRadius * circleRadius) {
+                            // Start dragging this circle
+                            isDraggingCircle = true;
+                            draggedConnection = conn;
+                           
+                            // Toggle curve mode with Ctrl/Cmd click
+                            if (e.ctrlKey || e.metaKey) {
+                                conn.curved = !conn.curved;
+                                saveState();
+                            }
+                           
+                            draw();
+                            return;
+                        }
+                    }
+                }
+            }
+           
+            // Check if in simultaneous execution mode
+            if (simultaneousMode) {
+                // Check if clicking on a connection number
+                for (const conn of connections) {
+                    const fromImg = images.find(img => img.id === conn.from);
+                    const toImg = images.find(img => img.id === conn.to);
+                    if (fromImg && toImg) {
+                        let midX, midY;
+                        if (conn.circleX !== undefined && conn.circleX !== null) {
+                            midX = conn.circleX;
+                            midY = conn.circleY;
+                        } else {
+                            midX = (fromImg.x + toImg.x) / 2;
+                            midY = (fromImg.y + toImg.y) / 2;
+                        }
+                        // OPTIMIZATION: Squared distance comparison
+                        const circleRadius = 16 / camera.zoom;
+                        const dx = pos.x - midX;
+                        const dy = pos.y - midY;
+                        const distanceSquared = dx * dx + dy * dy;
+                       
+                        if (distanceSquared < circleRadius * circleRadius) {
+                            // Toggle simultaneous flag
+                            conn.simultaneous = !conn.simultaneous;
+                            saveState();
+                            updateDataString();
+                            draw();
+                            return;
+                        }
+                    }
+                }
+                return;
+            }
+           
+            // Check if in connect mode
+            if (connectMode) {
+                const clickedImage = getImageAtPoint(pos.x, pos.y);
+                if (clickedImage) {
+                    if (!connectFrom) {
+                        connectFrom = clickedImage;
+                        draw();
+                    } else if (connectFrom !== clickedImage) {
+                        // Create connection
+                        const existingConnection = connections.find(c =>
+                            (c.from === connectFrom.id && c.to === clickedImage.id) ||
+                            (c.from === clickedImage.id && c.to === connectFrom.id)
+                        );
+                       
+                        if (existingConnection) {
+                            connections = connections.filter(c => c !== existingConnection);
+                            saveState();
+                        } else {
+                            connections.push({
+                                from: connectFrom.id,
+                                to: clickedImage.id,
+                                number: connectionCounter++,
+                                simultaneous: false,
+                                circleX: null,
+                                circleY: null,
+                                curved: false
+                            });
+                            saveState();
+                        }
+                       
+                        updateConnectionCount();
+                        connectFrom = null;
+                        draw();
+                    }
+                }
+                return;
+            }
+           
+            // Check if clicking on an image (in reverse order for z-index)
+            for (let i = images.length - 1; i >= 0; i--) {
+                const image = images[i];
+               
+                // Check resize handle first (only when shift is held)
+                if (e.shiftKey && isPointInResizeHandle(pos.x, pos.y, image)) {
+                    selectedImage = image;
+                    isResizing = true;
+                    resizeStart = {
+                        width: image.width,
+                        height: image.height,
+                        x: pos.x,
+                        y: pos.y
+                    };
+                    container.classList.add('resizing');
+                    draw();
+                    return;
+                }
+               
+                // Check rotation handle
+                if (isPointInRotateHandle(pos.x, pos.y, image)) {
+                    selectedImage = image;
+                    isRotating = true;
+                    rotateStart = Math.atan2(pos.y - image.y, pos.x - image.x) - image.rotation;
+                    draw();
+                    return;
+                }
+               
+                // Then check image body
+                if (isPointInImage(pos.x, pos.y, image)) {
+                    selectedImage = image;
+                   
+                    // Check if Alt key is held for duplication
+                    if (e.altKey) {
+                        isDuplicating = true;
+                        duplicateSource = image;
+                        dragStart = { x: pos.x - image.x, y: pos.y - image.y };
+                    } else {
+                        isDragging = true;
+                        dragStart = { x: pos.x - image.x, y: pos.y - image.y };
+                        // Move to front
+                        images.splice(i, 1);
+                        images.push(image);
+                        updateImageList();
+                    }
+                   
+                    draw();
+                    return;
+                }
+            }
+           
+            // If not clicking on an image, start panning
+            isPanning = true;
+            dragStart = { x: e.clientX - camera.x, y: e.clientY - camera.y };
+            container.classList.add('grabbing');
+        });
+       
+        // Mouse move event
+        canvas.addEventListener('mousemove', (e) => {
+            const pos = screenToCanvas(e.clientX, e.clientY);
+           
+            if (isDuplicating && duplicateSource) {
+                // Just update for visual feedback (ghost will be drawn in draw())
+                dragStart.ghostX = pos.x - dragStart.x;
+                dragStart.ghostY = pos.y - dragStart.y;
+                scheduleDraw();
+            } else if (isDraggingCircle && draggedConnection) {
+                // Update circle position
+                draggedConnection.circleX = pos.x;
+                draggedConnection.circleY = pos.y;
+                scheduleDraw();
+            } else if (isDragging && selectedImage) {
+                selectedImage.x = pos.x - dragStart.x;
+                selectedImage.y = pos.y - dragStart.y;
+                scheduleDraw();
+            } else if (isRotating && selectedImage) {
+                const angle = Math.atan2(pos.y - selectedImage.y, pos.x - selectedImage.x);
+                selectedImage.rotation = angle - rotateStart;
+                scheduleDraw();
+            } else if (isResizing && selectedImage) {
+                // Calculate distance from image center
+                const dx = pos.x - resizeStart.x;
+                const dy = pos.y - resizeStart.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const startDistance = Math.sqrt(
+                    (resizeStart.width / 2) ** 2 + (resizeStart.height / 2) ** 2
+                );
+                const scale = Math.max(0.1, 1 + (distance - startDistance) / startDistance);
+               
+                // Maintain aspect ratio
+                const aspectRatio = resizeStart.width / resizeStart.height;
+                selectedImage.width = resizeStart.width * scale;
+                selectedImage.height = resizeStart.height * scale;
+               
+                scheduleDraw();
+            } else if (isPanning) {
+                camera.x = e.clientX - dragStart.x;
+                camera.y = e.clientY - dragStart.y;
+                scheduleDraw();
+            } else {
+                // Not dragging - check if hovering over any special handles
+                let cursorSet = false;
+               
+                // Check if hovering over connection circles
+                if (!connectMode && !simultaneousMode) {
+                    for (const conn of connections) {
+                        const fromImg = images.find(img => img.id === conn.from);
+                        const toImg = images.find(img => img.id === conn.to);
+                        if (fromImg && toImg) {
+                            let midX, midY;
+                            if (conn.circleX !== undefined && conn.circleX !== null) {
+                                midX = conn.circleX;
+                                midY = conn.circleY;
+                            } else {
+                                midX = (fromImg.x + toImg.x) / 2;
+                                midY = (fromImg.y + toImg.y) / 2;
+                            }
+                           
+                            // OPTIMIZATION: Squared distance comparison
+                            const circleRadius = 16 / camera.zoom;
+                            const dx = pos.x - midX;
+                            const dy = pos.y - midY;
+                            const distanceSquared = dx * dx + dy * dy;
+                           
+                            if (distanceSquared < circleRadius * circleRadius) {
+                                container.style.cursor = 'grab';
+                                cursorSet = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+               
+                // Check if shift is held and hovering over a resize handle
+                if (!cursorSet && e.shiftKey && selectedImage) {
+                    if (isPointInResizeHandle(pos.x, pos.y, selectedImage)) {
+                        container.style.cursor = 'nwse-resize';
+                        cursorSet = true;
+                    }
+                }
+               
+                // Check if hovering over rotation handle
+                if (!cursorSet && selectedImage && !connectMode) {
+                    if (isPointInRotateHandle(pos.x, pos.y, selectedImage)) {
+                        container.style.cursor = 'grab';
+                        cursorSet = true;
+                    }
+                }
+               
+                // Check if hovering over any image
+                if (!cursorSet) {
+                    const hoveredImage = getImageAtPoint(pos.x, pos.y);
+                    if (hoveredImage) {
+                        // Show copy cursor if Alt is held
+                        if (e.altKey) {
+                            container.style.cursor = 'copy';
+                        } else {
+                            container.style.cursor = 'move';
+                        }
+                        cursorSet = true;
+                    }
+                }
+               
+                // Reset to default if not hovering over anything special
+                if (!cursorSet) {
+                    if (connectMode) {
+                        container.style.cursor = 'crosshair';
+                    } else {
+                        container.style.cursor = 'grab';
+                    }
+                }
+            }
+        });
+       
+        // Mouse up event
+        canvas.addEventListener('mouseup', (e) => {
+            // Handle duplication completion
+            if (isDuplicating && duplicateSource && dragStart.ghostX !== undefined) {
+                const pos = screenToCanvas(e.clientX, e.clientY);
+               
+                // Create duplicate
+                const duplicate = {
+                    img: duplicateSource.isDot ? null : duplicateSource.img,
+                    x: pos.x - dragStart.x,
+                    y: pos.y - dragStart.y,
+                    width: duplicateSource.width,
+                    height: duplicateSource.height,
+                    rotation: duplicateSource.rotation,
+                    id: Date.now() + Math.random(), // Unique ID
+                    name: duplicateSource.name ? duplicateSource.name + " Copy" : "",
+                    fullName: duplicateSource.fullName ? duplicateSource.fullName + " Copy" : "",
+                    isDot: duplicateSource.isDot || false
+                };
+               
+                images.push(duplicate);
+                selectedImage = duplicate; // Select the new duplicate
+                saveState();
+                updateImageCount();
+                draw();
+            }
+           
+            // Save state after drag/rotate/resize operations
+            if (isDragging || isRotating || isResizing) {
+                saveState();
+            }
+           
+            // Save state after circle dragging
+            if (isDraggingCircle && draggedConnection) {
+                saveState();
+            }
+           
+            isDragging = false;
+            isDuplicating = false;
+            duplicateSource = null;
+            isDraggingCircle = false;
+            draggedConnection = null;
+            isRotating = false;
+            isResizing = false;
+            isPanning = false;
+            container.classList.remove('grabbing');
+            container.classList.remove('resizing');
+        });
+       
+        // ========================================
+        // ⚫ DOUBLE-CLICK TO CREATE DOT BLOCK
+        // ========================================
+        canvas.addEventListener('dblclick', (e) => {
+            const pos = screenToCanvas(e.clientX, e.clientY);
+            const clickedImage = getImageAtPoint(pos.x, pos.y);
+           
+            // If clicking on an existing image, open name modal
+            if (clickedImage && !connectMode) {
+                openNameModal(clickedImage);
+            }
+            // If clicking on empty space, create a dot block
+            else if (!clickedImage && !connectMode && !simultaneousMode) {
+                const newDot = {
+                    img: null,
+                    x: pos.x,
+                    y: pos.y,
+                    width: 40,  // Dot diameter
+                    height: 40, // Keep square for rotation/resize compatibility
+                    rotation: 0,
+                    id: Date.now() + Math.random(),
+                    name: '',
+                    fullName: '',
+                    isDot: true
+                };
+                images.push(newDot);
+                selectedImage = newDot;
+                saveState();
+                updateImageCount();
+                draw();
+            }
+        });
+       
+        // Keyboard events
+        document.addEventListener('keydown', (e) => {
+            // Don't handle keyboard shortcuts when modal is open
+            if (nameModal.style.display === 'block') return;
+           
+            if (e.key === 'Delete' && selectedImage) {
+                // Remove connections associated with this image
+                connections = connections.filter(c =>
+                    c.from !== selectedImage.id && c.to !== selectedImage.id
+                );
+                images = images.filter(img => img !== selectedImage);
+                selectedImage = null;
+                saveState();
+                updateImageCount();
+                updateConnectionCount();
+                updateImageList();
+                updateDataString();
+                draw();
+            } else if ((e.key === 'n' || e.key === 'N') && selectedImage) {
+                // Press 'N' to name the selected image
+                openNameModal(selectedImage);
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+                e.preventDefault();
+                redo();
+            } else if (e.key === 'F11') {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+        });
+       
+        // Zoom functions
+        function zoomIn() {
+            camera.zoom = Math.min(camera.zoom * 1.2, 3);
+            updateZoomLevel();
+            draw();
+        }
+       
+        function zoomOut() {
+            camera.zoom = Math.max(camera.zoom / 1.2, 0.1);
+            updateZoomLevel();
+            draw();
+        }
+       
+        function resetView() {
+            camera.x = 0;
+            camera.y = 0;
+            camera.zoom = 1;
+            updateZoomLevel();
+            draw();
+        }
+       
+        // Fullscreen function
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error('Fullscreen error:', err);
+                });
+            } else {
+                // Exit fullscreen
+                document.exitFullscreen();
+            }
+        }
+       
+        // Handle fullscreen change events
+        document.addEventListener('fullscreenchange', () => {
+            // Resize canvas when entering/exiting fullscreen
+            setTimeout(() => {
+                resizeCanvas();
+            }, 100);
+        });
+       
+        // Mouse wheel zoom
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const pos = screenToCanvas(e.clientX, e.clientY);
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Math.max(0.1, Math.min(3, camera.zoom * zoomFactor));
+           
+            // Zoom towards mouse position
+            camera.x = e.clientX - (pos.x * newZoom);
+            camera.y = e.clientY - (pos.y * newZoom);
+            camera.zoom = newZoom;
+           
+            updateZoomLevel();
+            scheduleDraw();
+        });
+       
+        // OPTIMIZATION: Throttle draw calls with requestAnimationFrame
+        function scheduleDraw() {
+            if (!drawScheduled) {
+                drawScheduled = true;
+                requestAnimationFrame(() => {
+                    drawScheduled = false;
+                    draw();
+                });
+            }
+        }
+       
+        // ========================================
+        // 🎨 DRAW EVERYTHING
+        // ========================================
+        function draw() {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+           
+            // Apply camera transform
+            ctx.setTransform(camera.zoom, 0, 0, camera.zoom, camera.x, camera.y);
+           
+            // OPTIMIZATION: Create image lookup map for O(1) access (instead of O(n) find())
+            const imageMap = new Map(images.map(img => [img.id, img]));
+           
+            // ========================================
+            // 🚀 PERFORMANCE FIX: VISIBLE GRID ONLY
+            // ========================================
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1 / camera.zoom;
+            ctx.beginPath();
+           
+            // Calculate visible area in world coordinates
+            const visibleLeft = -camera.x / camera.zoom;
+            const visibleTop = -camera.y / camera.zoom;
+            const visibleRight = (canvas.width - camera.x) / camera.zoom;
+            const visibleBottom = (canvas.height - camera.y) / camera.zoom;
+           
+            // Draw grid lines only in visible area (with some padding)
+            const gridSize = 100;
+            const startX = Math.floor(visibleLeft / gridSize) * gridSize;
+            const endX = Math.ceil(visibleRight / gridSize) * gridSize;
+            const startY = Math.floor(visibleTop / gridSize) * gridSize;
+            const endY = Math.ceil(visibleBottom / gridSize) * gridSize;
+           
+            // Draw all vertical lines in one path
+            for (let x = startX; x <= endX; x += gridSize) {
+                ctx.moveTo(x, startY);
+                ctx.lineTo(x, endY);
+            }
+           
+            // Draw all horizontal lines in same path
+            for (let y = startY; y <= endY; y += gridSize) {
+                ctx.moveTo(startX, y);
+                ctx.lineTo(endX, y);
+            }
+           
+            // Single stroke call for entire grid
+            ctx.stroke();
+           
+            // Draw connections between images with numbers and directional arrows
+            ctx.strokeStyle = '#2196F3';
+            ctx.lineWidth = 3 / camera.zoom;
+            connections.forEach(conn => {
+                const fromImg = imageMap.get(conn.from);
+                const toImg = imageMap.get(conn.to);
+                if (fromImg && toImg) {
+                    // Calculate default midpoint
+                    let midX, midY;
+                   
+                    // Use stored circle position if it exists, otherwise calculate default
+                    if (conn.circleX !== undefined && conn.circleX !== null) {
+                        midX = conn.circleX;
+                        midY = conn.circleY;
+                    } else {
+                        midX = (fromImg.x + toImg.x) / 2;
+                        midY = (fromImg.y + toImg.y) / 2;
+                       
+                        // Calculate line length
+                        const lineLength = Math.sqrt((toImg.x - fromImg.x)**2 + (toImg.y - fromImg.y)**2);
+                       
+                        // Calculate approximate radius of images (diagonal / 2)
+                        const fromImgRadius = Math.sqrt(fromImg.width**2 + fromImg.height**2) / 2;
+                        const toImgRadius = Math.sqrt(toImg.width**2 + toImg.height**2) / 2;
+                       
+                        // Minimum clearance from image edges (FIXED world-space, not zoom-adjusted)
+                        const minClearance = 35;
+                       
+                        // Check if midpoint is too close to either image
+                        const distFromStart = lineLength / 2;
+                        const distFromEnd = lineLength / 2;
+                       
+                        // If midpoint would be inside or too close to "from" image, push it forward
+                        if (distFromStart < fromImgRadius + minClearance) {
+                            const pushRatio = (fromImgRadius + minClearance) / lineLength;
+                            midX = fromImg.x + (toImg.x - fromImg.x) * pushRatio;
+                            midY = fromImg.y + (toImg.y - fromImg.y) * pushRatio;
+                        }
+                        // If midpoint would be inside or too close to "to" image, push it backward
+                        else if (distFromEnd < toImgRadius + minClearance) {
+                            const pushRatio = 1 - ((toImgRadius + minClearance) / lineLength);
+                            midX = fromImg.x + (toImg.x - fromImg.x) * pushRatio;
+                            midY = fromImg.y + (toImg.y - fromImg.y) * pushRatio;
+                        }
+                       
+                        // IMPORTANT: Store the calculated position so it doesn't recalculate every frame
+                        conn.circleX = midX;
+                        conn.circleY = midY;
+                    }
+                   
+                    // Draw line (curved if specified, straight otherwise)
+                    ctx.beginPath();
+                    ctx.moveTo(fromImg.x, fromImg.y);
+                   
+                    if (conn.curved) {
+                        // For a quadratic bezier that passes THROUGH the midpoint,
+                        // we need to calculate the control point
+                        // Control point formula: C = 2*M - (P0 + P1)/2
+                        const controlX = 2 * midX - (fromImg.x + toImg.x) / 2;
+                        const controlY = 2 * midY - (fromImg.y + toImg.y) / 2;
+                       
+                        // Draw smooth bezier curve THROUGH the circle position
+                        ctx.quadraticCurveTo(controlX, controlY, toImg.x, toImg.y);
+                    } else {
+                        // Draw bent line (two straight segments)
+                        ctx.lineTo(midX, midY);
+                        ctx.lineTo(toImg.x, toImg.y);
+                    }
+                    ctx.stroke();
+                   
+                    // Calculate angle for arrow (from circle to target)
+                    const angle = Math.atan2(toImg.y - midY, toImg.x - midX);
+                   
+                    // Draw number in a circle at the calculated/stored position
+                    const circleRadius = 16 / camera.zoom;
+                   
+                    // Draw white circle background (or grey if simultaneous)
+                    ctx.fillStyle = conn.simultaneous ? '#e0e0e0' : '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                   
+                    // Draw blue border (or purple if simultaneous)
+                    ctx.strokeStyle = conn.simultaneous ? '#673AB7' : '#2196F3';
+                    ctx.lineWidth = 2 / camera.zoom;
+                    ctx.beginPath();
+                    ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                   
+                    // Draw number
+                    ctx.fillStyle = conn.simultaneous ? '#673AB7' : '#2196F3';
+                    ctx.font = `bold ${14 / camera.zoom}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(conn.number.toString(), midX, midY);
+                   
+                    // Draw directional arrow RIGHT NEXT TO the number circle
+                    // Position the arrow at a fixed distance from the circle center along the line direction
+                    const arrowDistance = 28 / camera.zoom; // Distance from circle center to arrow
+                    const arrowX = midX + Math.cos(angle) * arrowDistance;
+                    const arrowY = midY + Math.sin(angle) * arrowDistance;
+                   
+                    // Arrow dimensions (smaller and more compact)
+                    const arrowLength = 16 / camera.zoom;
+                    const arrowWidth = 10 / camera.zoom;
+                   
+                    ctx.save();
+                    ctx.translate(arrowX, arrowY);
+                    ctx.rotate(angle);
+                   
+                    // Draw arrow shape (filled triangle)
+                    ctx.fillStyle = '#2196F3';
+                    ctx.beginPath();
+                    ctx.moveTo(arrowLength / 2, 0); // Arrow tip (points forward)
+                    ctx.lineTo(-arrowLength / 2, -arrowWidth / 2); // Bottom left
+                    ctx.lineTo(-arrowLength / 2, arrowWidth / 2); // Top left
+                    ctx.closePath();
+                    ctx.fill();
+                   
+                    // Draw white outline for better visibility
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1.5 / camera.zoom;
+                    ctx.stroke();
+                   
+                    ctx.restore();
+                   
+                    // Reset line width and stroke style for next connection
+                    ctx.lineWidth = 3 / camera.zoom;
+                    ctx.strokeStyle = '#2196F3';
+                }
+            });
+           
+            // Draw images
+           
+            // Hoist label collision detection functions (defined once, not per image)
+            const pointInRect = (px, py, rx, ry, rw, rh) => {
+                return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
+            };
+           
+            const lineIntersectsLine = (x1, y1, x2, y2, x3, y3, x4, y4) => {
+                const denom = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4));
+                if (denom === 0) return false;
+               
+                const t = (((x1 - x3) * (y3 - y4)) - ((y1 - y3) * (x3 - x4))) / denom;
+                const u = -(((x1 - x2) * (y1 - y3)) - ((y1 - y2) * (x1 - x3))) / denom;
+               
+                return (t >= 0 && t <= 1) && (u >= 0 && u <= 1);
+            };
+           
+            const lineIntersectsRect = (x1, y1, x2, y2, rx, ry, rw, rh) => {
+                if (pointInRect(x1, y1, rx, ry, rw, rh) || pointInRect(x2, y2, rx, ry, rw, rh)) {
+                    return true;
+                }
+               
+                return lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx + rw, ry) || // Top edge
+                       lineIntersectsLine(x1, y1, x2, y2, rx + rw, ry, rx + rw, ry + rh) || // Right edge
+                       lineIntersectsLine(x1, y1, x2, y2, rx, ry + rh, rx + rw, ry + rh) || // Bottom edge
+                       lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx, ry + rh); // Left edge
+            };
+           
+            images.forEach(image => {
+                ctx.save();
+                ctx.translate(image.x, image.y);
+                ctx.rotate(image.rotation);
+               
+                // ========================================
+                // ⚫ DRAW DOT OR IMAGE
+                // ========================================
+                if (image.isDot) {
+                    // Draw solid black circle (super fast!)
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, image.width / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Draw image block (existing code)
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(image.img, -image.width / 2, -image.height / 2, image.width, image.height);
+                }
+               
+                // Draw selection and controls if selected or in connect mode
+                if (image === selectedImage || (connectMode && image === connectFrom)) {
+                    ctx.strokeStyle = connectMode && image === connectFrom ? '#FF9800' : '#2196F3';
+                    ctx.lineWidth = 2 / camera.zoom;
+                    ctx.strokeRect(-image.width / 2, -image.height / 2, image.width, image.height);
+                }
+               
+                // Draw rotation handle if selected (not in connect mode)
+                if (image === selectedImage && !connectMode) {
+                    const handleDistance = image.height / 2 + 30;
+                   
+                    // Draw rotation icon (circular arrow)
+                    ctx.strokeStyle = '#2196F3';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.lineWidth = 2 / camera.zoom;
+                   
+                    // Circle background
+                    ctx.beginPath();
+                    ctx.arc(0, -handleDistance, 12 / camera.zoom, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                   
+                    // Draw circular arrow
+                    ctx.beginPath();
+                    ctx.arc(0, -handleDistance, 7 / camera.zoom, -Math.PI * 0.7, Math.PI * 0.7);
+                    ctx.stroke();
+                   
+                    // Arrow head
+                    const arrowSize = 4 / camera.zoom;
+                    ctx.beginPath();
+                    ctx.moveTo(7 / camera.zoom * Math.cos(Math.PI * 0.7), -handleDistance + 7 / camera.zoom * Math.sin(Math.PI * 0.7));
+                    ctx.lineTo((7 / camera.zoom - arrowSize) * Math.cos(Math.PI * 0.7) - arrowSize * Math.sin(Math.PI * 0.7),
+                              -handleDistance + (7 / camera.zoom - arrowSize) * Math.sin(Math.PI * 0.7) + arrowSize * Math.cos(Math.PI * 0.7));
+                    ctx.stroke();
+                   
+                    // Line to handle
+                    ctx.beginPath();
+                    ctx.moveTo(0, -image.height / 2);
+                    ctx.lineTo(0, -handleDistance);
+                    ctx.stroke();
+                   
+                    // Draw resize handle at bottom-right corner
+                    const cornerX = image.width / 2;
+                    const cornerY = image.height / 2;
+                   
+                    ctx.fillStyle = '#4CAF50';
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2 / camera.zoom;
+                   
+                    // Draw square resize handle
+                    const handleSize = 10 / camera.zoom;
+                    ctx.fillRect(cornerX - handleSize / 2, cornerY - handleSize / 2, handleSize, handleSize);
+                    ctx.strokeRect(cornerX - handleSize / 2, cornerY - handleSize / 2, handleSize, handleSize);
+                }
+               
+                ctx.restore();
+               
+                // Draw image name next to image (in canvas coordinates, not rotated)
+                if (image.name) {
+                    // OPTIMIZATION: No need for save/restore here as we're not changing transform
+                   
+                    // Set up text properties first to measure it
+                    ctx.font = `${14 / camera.zoom}px Arial`;
+                    const textWidth = ctx.measureText(image.name).width;
+                    const textHeight = 14 / camera.zoom;
+                    const padding = 6 / camera.zoom;
+                    const offset = 10 / camera.zoom;
+                   
+                    // Define possible label positions (right, top, bottom, left)
+                    const possiblePositions = [
+                        { x: image.x + image.width / 2 + offset, y: image.y, align: 'left' }, // Right
+                        { x: image.x, y: image.y - image.height / 2 - offset - textHeight / 2, align: 'center' }, // Top
+                        { x: image.x, y: image.y + image.height / 2 + offset + textHeight / 2, align: 'center' }, // Bottom
+                        { x: image.x - image.width / 2 - offset - textWidth, y: image.y, align: 'left' } // Left
+                    ];
+                   
+                    // Function to check if label overlaps with rotation handle
+                    const labelOverlapsRotationHandle = (labelX, labelY, labelWidth, labelHeight, align) => {
+                        // Only check if this is the selected image (rotation handle only shown when selected)
+                        if (image !== selectedImage || connectMode) return false;
+                       
+                        // Calculate rotation handle position (above the image)
+                        const handleDistance = image.height / 2 + 30;
+                        const handleRadius = 12 / camera.zoom;
+                        const angle = image.rotation;
+                        const handleX = image.x + Math.sin(angle) * handleDistance;
+                        const handleY = image.y - Math.cos(angle) * handleDistance;
+                       
+                        // Calculate actual label bounds based on alignment
+                        let boxX, boxY;
+                        if (align === 'left') {
+                            boxX = labelX - padding;
+                            boxY = labelY - labelHeight / 2 - padding;
+                        } else { // center
+                            boxX = labelX - labelWidth / 2 - padding;
+                            boxY = labelY - labelHeight / 2 - padding;
+                        }
+                        const boxWidth = labelWidth + padding * 2;
+                        const boxHeight = labelHeight + padding * 2;
+                       
+                        // Check if rotation handle circle intersects with label box
+                        // Find closest point in rectangle to circle center
+                        const closestX = Math.max(boxX, Math.min(handleX, boxX + boxWidth));
+                        const closestY = Math.max(boxY, Math.min(handleY, boxY + boxHeight));
+                       
+                        // Calculate distance from circle center to closest point
+                        const distanceX = handleX - closestX;
+                        const distanceY = handleY - closestY;
+                        const distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
+                       
+                        // Check if distance is less than radius (with some padding)
+                        const safeRadius = handleRadius + 10 / camera.zoom;
+                        return distanceSquared < (safeRadius * safeRadius);
+                    }
+                   
+                    // Function to check if a label box intersects with a line
+                    const labelIntersectsLine = (labelX, labelY, labelWidth, labelHeight, align) => {
+                        // Calculate actual label bounds based on alignment
+                        let boxX, boxY;
+                        if (align === 'left') {
+                            boxX = labelX - padding;
+                            boxY = labelY - labelHeight / 2 - padding;
+                        } else { // center
+                            boxX = labelX - labelWidth / 2 - padding;
+                            boxY = labelY - labelHeight / 2 - padding;
+                        }
+                        const boxWidth = labelWidth + padding * 2;
+                        const boxHeight = labelHeight + padding * 2;
+                       
+                        // Check against rotation handle first
+                        if (labelOverlapsRotationHandle(labelX, labelY, labelWidth, labelHeight, align)) {
+                            return true;
+                        }
+                       
+                        // NEW: Check collision with OTHER images
+                        for (const otherImage of images) {
+                            if (otherImage === image) continue; // Skip self
+                           
+                            // Simple rectangle overlap test
+                            const imgLeft = otherImage.x - otherImage.width / 2;
+                            const imgRight = otherImage.x + otherImage.width / 2;
+                            const imgTop = otherImage.y - otherImage.height / 2;
+                            const imgBottom = otherImage.y + otherImage.height / 2;
+                           
+                            // Check if label box overlaps image bounds
+                            if (!(boxX + boxWidth < imgLeft ||
+                                  boxX > imgRight ||
+                                  boxY + boxHeight < imgTop ||
+                                  boxY > imgBottom)) {
+                                return true; // Collision found
+                            }
+                        }
+                       
+                        // Check against all connection lines
+                        for (const conn of connections) {
+                            const fromImg = imageMap.get(conn.from);
+                            const toImg = imageMap.get(conn.to);
+                            if (!fromImg || !toImg) continue;
+                           
+                            // Check if line intersects with label box
+                            if (lineIntersectsRect(
+                                fromImg.x, fromImg.y, toImg.x, toImg.y,
+                                boxX, boxY, boxWidth, boxHeight
+                            )) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                   
+                    // Find the best position with least collisions
+                    let bestPosition = possiblePositions[0]; // Default to right
+                    let foundClearSpot = false;
+                   
+                    for (const pos of possiblePositions) {
+                        if (!labelIntersectsLine(pos.x, pos.y, textWidth, textHeight, pos.align)) {
+                            bestPosition = pos;
+                            foundClearSpot = true;
+                            break;
+                        }
+                    }
+                   
+                    // Use the best position
+                    const labelX = bestPosition.x;
+                    const labelY = bestPosition.y;
+                    const textAlign = bestPosition.align;
+                   
+                    // Calculate box position based on alignment
+                    let boxX, boxY;
+                    if (textAlign === 'left') {
+                        boxX = labelX - padding;
+                        boxY = labelY - textHeight / 2 - padding;
+                    } else { // center
+                        boxX = labelX - textWidth / 2 - padding;
+                        boxY = labelY - textHeight / 2 - padding;
+                    }
+                   
+                    // Draw white background box with border
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = foundClearSpot ? '#4CAF50' : '#FF9800'; // Green if clear, orange if still colliding
+                    ctx.lineWidth = 1.5 / camera.zoom;
+                    ctx.fillRect(boxX, boxY, textWidth + padding * 2, textHeight + padding * 2);
+                    ctx.strokeRect(boxX, boxY, textWidth + padding * 2, textHeight + padding * 2);
+                   
+                    // Draw the text on top of the background
+                    ctx.fillStyle = '#333';
+                    ctx.textAlign = textAlign;
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(image.name, labelX, labelY);
+                }
+            });
+           
+            // Draw ghost image while duplicating
+            if (isDuplicating && duplicateSource && dragStart.ghostX !== undefined) {
+                ctx.save();
+                ctx.globalAlpha = 0.5; // 50% transparent
+                ctx.translate(dragStart.ghostX, dragStart.ghostY);
+                ctx.rotate(duplicateSource.rotation);
+               
+                // Draw the ghost (dot or image)
+                if (duplicateSource.isDot) {
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, duplicateSource.width / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(duplicateSource.img, -duplicateSource.width / 2, -duplicateSource.height / 2,
+                                  duplicateSource.width, duplicateSource.height);
+                }
+               
+                // Draw dashed outline
+                ctx.strokeStyle = '#2196F3';
+                ctx.lineWidth = 2 / camera.zoom;
+                ctx.setLineDash([10 / camera.zoom, 5 / camera.zoom]);
+                ctx.strokeRect(-duplicateSource.width / 2, -duplicateSource.height / 2,
+                               duplicateSource.width, duplicateSource.height);
+                ctx.setLineDash([]); // Reset dash
+               
+                ctx.restore();
+               
+                // Dim the original slightly
+                ctx.save();
+                ctx.globalAlpha = 0.7;
+                ctx.translate(duplicateSource.x, duplicateSource.y);
+                ctx.rotate(duplicateSource.rotation);
+               
+                if (duplicateSource.isDot) {
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, duplicateSource.width / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.drawImage(duplicateSource.img, -duplicateSource.width / 2, -duplicateSource.height / 2,
+                                  duplicateSource.width, duplicateSource.height);
+                }
+               
+                ctx.restore();
+            }
+        }
+       
+        updateZoomLevel();
+        scheduleDraw();
+       
+        // Save Engine Function
+        function saveEngine() {
+            // Prepare engine data
+            const engineData = {
+                version: "1.1", // Bumped version for dot support
+                timestamp: new Date().toISOString(),
+                camera: {
+                    x: camera.x,
+                    y: camera.y,
+                    zoom: camera.zoom
+                },
+                images: images.map(img => ({
+                    id: img.id,
+                    name: img.name,
+                    fullName: img.fullName,
+                    x: img.x,
+                    y: img.y,
+                    width: img.width,
+                    height: img.height,
+                    rotation: img.rotation,
+                    isDot: img.isDot || false,
+                    imageData: img.isDot ? null : img.img.src // No image data for dots
+                })),
+                connections: connections.map(conn => ({
+                    from: conn.from,
+                    to: conn.to,
+                    number: conn.number,
+                    simultaneous: conn.simultaneous || false
+                })),
+                connectionCounter: connectionCounter
+            };
+           
+            // Convert to JSON
+            const jsonString = JSON.stringify(engineData, null, 2);
+           
+            // Create download link
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `otom_engine_${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+           
+            alert('✅ Engine saved successfully!');
+        }
+       
+        // Load Engine Function
+        document.getElementById('loadInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+           
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const engineData = JSON.parse(ev.target.result);
+                   
+                    // Validate data
+                    if (!engineData.version || !engineData.images) {
+                        throw new Error('Invalid engine file format');
+                    }
+                   
+                    // Clear current canvas
+                    images = [];
+                    connections = [];
+                    selectedImage = null;
+                   
+                    // Restore camera position
+                    if (engineData.camera) {
+                        camera.x = engineData.camera.x;
+                        camera.y = engineData.camera.y;
+                        camera.zoom = engineData.camera.zoom;
+                        updateZoomLevel();
+                    }
+                   
+                    // Restore connection counter
+                    if (engineData.connectionCounter) {
+                        connectionCounter = engineData.connectionCounter;
+                    }
+                   
+                    // Load images (including dots)
+                    let loadedCount = 0;
+                    const totalImages = engineData.images.length;
+                   
+                    if (totalImages === 0) {
+                        // No images to load
+                        connections = engineData.connections || [];
+                        updateImageCount();
+                        updateConnectionCount();
+                        draw();
+                        alert('✅ Engine loaded successfully!');
+                        return;
+                    }
+                   
+                    engineData.images.forEach(imgData => {
+                        if (imgData.isDot) {
+                            // Load dot (no image loading needed)
+                            const newDot = {
+                                img: null,
+                                x: imgData.x,
+                                y: imgData.y,
+                                width: imgData.width,
+                                height: imgData.height,
+                                rotation: imgData.rotation,
+                                id: imgData.id,
+                                name: imgData.name || '',
+                                fullName: imgData.fullName || '',
+                                isDot: true
+                            };
+                            images.push(newDot);
+                           
+                            loadedCount++;
+                            if (loadedCount === totalImages) {
+                                connections = engineData.connections || [];
+                                updateImageCount();
+                                updateConnectionCount();
+                                updateImageList();
+                                updateDataString();
+                                draw();
+                                alert('✅ Engine loaded successfully!');
+                            }
+                        } else {
+                            // Load image block
+                            const img = new Image();
+                            img.onload = () => {
+                                const newImage = {
+                                    img: img,
+                                    x: imgData.x,
+                                    y: imgData.y,
+                                    width: imgData.width,
+                                    height: imgData.height,
+                                    rotation: imgData.rotation,
+                                    id: imgData.id,
+                                    name: imgData.name || '',
+                                    fullName: imgData.fullName || '',
+                                    isDot: false
+                                };
+                                images.push(newImage);
+                               
+                                loadedCount++;
+                                if (loadedCount === totalImages) {
+                                    // All images loaded, restore connections
+                                    connections = engineData.connections || [];
+                                    updateImageCount();
+                                    updateConnectionCount();
+                                    updateImageList();
+                                    updateDataString();
+                                    draw();
+                                    alert('✅ Engine loaded successfully!');
+                                }
+                            };
+                            img.onerror = () => {
+                                console.error('Failed to load image:', imgData.id);
+                                loadedCount++;
+                                if (loadedCount === totalImages) {
+                                    connections = engineData.connections || [];
+                                    updateImageCount();
+                                    updateConnectionCount();
+                                    updateImageList();
+                                    updateDataString();
+                                    draw();
+                                    alert('⚠️ Engine loaded with some errors. Check console.');
+                                }
+                            };
+                            img.src = imgData.imageData;
+                        }
+                    });
+                   
+                } catch (err) {
+                    alert('❌ Error loading engine: ' + err.message);
+                    console.error('Load error:', err);
+                }
+            };
+            reader.readAsText(file);
+           
+            // Reset file input
+            e.target.value = '';
+        });
+    </script>
+</body>
+</html>
