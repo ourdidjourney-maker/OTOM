@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -241,6 +241,59 @@
         #renumberModal button {
             margin: 5px;
         }
+
+        /* Pop-out data / steps panel */
+        #dataPanel {
+            display: none;
+            position: fixed;
+            top: 120px;
+            left: 40px;
+            width: 420px;
+            height: 460px;
+            min-width: 300px;
+            min-height: 220px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 28px rgba(0,0,0,0.28);
+            z-index: 1500;
+            flex-direction: column;
+            overflow: hidden;
+            resize: both;
+        }
+
+        #dataPanelHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: #009688;
+            color: white;
+            cursor: move;
+            user-select: none;
+            border-radius: 10px 10px 0 0;
+        }
+
+        #dataPanelHeader h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+
+        #dataPanelHeader button {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        #dataPanelHeader button:hover {
+            background: rgba(255,255,255,0.35);
+        }
+
+        #dataPanelContent {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding: 10px 12px;
+        }
     </style>
 </head>
 <body>
@@ -248,7 +301,7 @@
         <input type="file" id="fileInput" accept="image/*" style="display: none;">
         <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">Upload Coding Block/Element</button>
         <button id="connectBtn" onclick="toggleConnectMode()">Connect Block Elements</button>
-        <button id="simultaneousBtn" onclick="toggleSimultaneousMode()">Simultaneous Execution / Multithread</button>
+        <button id="simultaneousBtn" onclick="toggleSimultaneousMode()">Merge Into One Step</button>
         <button onclick="undo()" style="background: #FFC107;">↶ Undo (Ctrl+Z)</button>
         <button onclick="redo()" style="background: #FFC107;">↷ Redo (Ctrl+Shift+Z)</button>
         <button onclick="zoomIn()">Zoom In (+)</button>
@@ -270,7 +323,7 @@
                 Click images to connect them
             </div>
             <div class="zoom-info" id="simultaneousInfo" style="display: none; color: #673AB7; font-weight: bold;">
-                Click connection numbers to mark simultaneous
+                Click two logic lines to merge them into one simultaneous step
             </div>
             <div class="zoom-info" style="color: #666; margin-top: 10px;">
                 💡 Hold Shift and drag corner to resize
@@ -293,6 +346,7 @@
             <div class="zoom-info" style="color: #000000; margin-top: 5px; font-weight: bold;">
                 ⚫ Double-click empty canvas to create vector </div> <div class="zoom-info" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
                 <strong style="color: #333;">📊 Data String:</strong>
+                <button onclick="openDataPanel()" style="background: #009688; padding: 3px 8px; font-size: 11px; margin: 0 0 0 6px;" title="Open the steps in a larger, editable panel">⇱ Pop Out</button>
                 <div id="dataString" style="font-family: 'Courier New', monospace; font-size: 11px; color: #333; margin-top: 5px; max-height: 50px; overflow-y: auto; background: #f9f9f9; padding: 8px; border-radius: 4px; line-height: 1.6;">
                     No connections yet
                 </div>
@@ -353,6 +407,14 @@
         </div>
     </div>
 
+    <div id="dataPanel">
+        <div id="dataPanelHeader">
+            <h3>📊 Steps &amp; Logic Lines</h3>
+            <button onclick="closeDataPanel()" title="Close">✕</button>
+        </div>
+        <div id="dataPanelContent"></div>
+    </div>
+
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -379,7 +441,22 @@
         let connectMode = false;
         let connectFrom = null;
         let simultaneousMode = false;
+        let mergeFrom = null;
         let imageToName = null;
+
+        // Per-step colouring for multithread groups
+        let stepColors = {}; // stepNumber -> color (only for simultaneous groups)
+        // Distinct, high-contrast colours (blue is reserved for normal single steps)
+        const SIMULTANEOUS_PALETTE = [
+            '#673AB7', // purple
+            '#E91E63', // pink / magenta
+            '#FF9800', // orange
+            '#009688', // teal
+            '#C2185B', // deep pink
+            '#795548', // brown
+            '#F44336', // red
+            '#607D8B'  // blue-grey
+        ];
 
         // Undo system
         let historyStack = [];
@@ -597,6 +674,23 @@
             const counts = {};
             connections.forEach(c => { counts[c.number] = (counts[c.number] || 0) + 1; });
             connections.forEach(c => { c.simultaneous = counts[c.number] > 1; });
+
+            // Assign a DISTINCT color to each simultaneous (multithread) group.
+            // Single/sequential steps stay the default blue; each group of
+            // duplicates gets its own colour so two multithreads never clash.
+            stepColors = {};
+            const simulSteps = Object.keys(counts)
+                .map(Number)
+                .filter(n => counts[n] > 1)
+                .sort((a, b) => a - b);
+            simulSteps.forEach((step, i) => {
+                stepColors[step] = SIMULTANEOUS_PALETTE[i % SIMULTANEOUS_PALETTE.length];
+            });
+        }
+
+        // Color for a given step number (blue if it's a normal single step)
+        function colorForStep(stepNumber) {
+            return stepColors[stepNumber] || '#2196F3';
         }
 
         function updateDataString() {
@@ -637,7 +731,7 @@
             steps.forEach(step => {
                 const group = groups.get(step);
                 const simultaneous = group.length > 1;
-                const color = simultaneous ? '#673AB7' : '#2196F3';
+                const color = colorForStep(step);
 
                 if (!simultaneous) {
                     const conn = group[0];
@@ -650,6 +744,9 @@
                     });
                 }
             });
+
+            // Keep the pop-out panel in sync with every data change
+            renderDataPanel();
         }
 
         function updateZoomLevel() {
@@ -684,12 +781,13 @@
                     toggleConnectMode();
                 }
                 simultaneousBtn.classList.add('active');
-                simultaneousBtn.textContent = 'Cancel Simultaneous';
+                simultaneousBtn.textContent = 'Cancel Merge';
                 simultaneousInfo.style.display = 'block';
                 container.style.cursor = 'pointer';
             } else {
+                mergeFrom = null;
                 simultaneousBtn.classList.remove('active');
-                simultaneousBtn.textContent = 'Simultaneous Execution';
+                simultaneousBtn.textContent = 'Merge Into One Step';
                 simultaneousInfo.style.display = 'none';
                 container.style.cursor = 'grab';
             }
@@ -797,6 +895,125 @@
                 closeRenumberModal();
             }
         });
+
+        // ========================================
+        // 📊 POP-OUT DATA / STEPS PANEL
+        // ========================================
+        const dataPanel = document.getElementById('dataPanel');
+        const dataPanelHeader = document.getElementById('dataPanelHeader');
+
+        function openDataPanel() {
+            dataPanel.style.display = 'flex';
+            renderDataPanel();
+        }
+
+        function closeDataPanel() {
+            dataPanel.style.display = 'none';
+        }
+
+        // Builds the rich, editable step view inside the pop-out panel
+        function renderDataPanel() {
+            const content = document.getElementById('dataPanelContent');
+            if (!content) return;
+
+            if (connections.length === 0) {
+                content.innerHTML = '<div style="color:#999; font-size:13px; padding:16px; text-align:center;">No connections yet.<br>Connect some block elements to see steps here.</div>';
+                return;
+            }
+
+            const nameOf = (id) => {
+                const img = images.find(i => i.id === id);
+                if (!img) return '???';
+                return img.fullName || img.name || (img.isDot ? 'Unnamed Dot' : 'Unnamed Block');
+            };
+
+            // Group connections by step number
+            const groups = new Map();
+            connections.forEach(conn => {
+                if (!groups.has(conn.number)) groups.set(conn.number, []);
+                groups.get(conn.number).push(conn);
+            });
+            const steps = [...groups.keys()].sort((a, b) => a - b);
+
+            content.innerHTML = '';
+
+            steps.forEach(step => {
+                const group = groups.get(step);
+                const simultaneous = group.length > 1;
+                const color = colorForStep(step);
+
+                const section = document.createElement('div');
+                section.style.cssText = `margin: 0 0 10px 0; border-left: 5px solid ${color}; background: #f9f9f9; border-radius: 6px; padding: 8px 10px;`;
+
+                const header = document.createElement('div');
+                header.style.cssText = `display: flex; align-items: center; gap: 8px; margin-bottom: 6px;`;
+                const badge = document.createElement('span');
+                badge.style.cssText = `background: ${color}; color: #fff; border-radius: 12px; padding: 2px 10px; font-size: 13px; font-weight: bold;`;
+                badge.textContent = `Step ${step}`;
+                header.appendChild(badge);
+                if (simultaneous) {
+                    const tag = document.createElement('span');
+                    tag.style.cssText = `color: ${color}; font-size: 12px; font-weight: bold;`;
+                    tag.textContent = `⇉ Simultaneous (${group.length})`;
+                    header.appendChild(tag);
+                }
+                section.appendChild(header);
+
+                group.forEach(conn => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px;';
+
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.step = '1';
+                    input.value = conn.number;
+                    input.title = "Change this line's step number (same number = runs together)";
+                    input.style.cssText = 'width: 54px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-size: 13px;';
+                    input.addEventListener('change', () => {
+                        const v = parseInt(input.value, 10);
+                        if (!isNaN(v)) {
+                            conn.number = v;
+                            normalizeStepNumbers();
+                            saveState();
+                            updateConnectionCount(); // re-normalizes, updates data string + this panel
+                            draw();
+                        }
+                    });
+
+                    const label = document.createElement('span');
+                    label.style.color = '#333';
+                    label.textContent = `${nameOf(conn.from)} → ${nameOf(conn.to)}`;
+
+                    row.appendChild(input);
+                    row.appendChild(label);
+                    section.appendChild(row);
+                });
+
+                content.appendChild(section);
+            });
+        }
+
+        // Make the pop-out panel draggable by its header
+        let isDataPanelDragging = false;
+        let dataPanelDragStart = { x: 0, y: 0 };
+        dataPanelHeader.addEventListener('mousedown', (e) => {
+            if (e.target.tagName === 'BUTTON') return; // don't drag when hitting the close button
+            isDataPanelDragging = true;
+            const rect = dataPanel.getBoundingClientRect();
+            dataPanelDragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (isDataPanelDragging) {
+                let nx = e.clientX - dataPanelDragStart.x;
+                let ny = e.clientY - dataPanelDragStart.y;
+                nx = Math.max(0, Math.min(nx, window.innerWidth - 120));
+                ny = Math.max(0, Math.min(ny, window.innerHeight - 60));
+                dataPanel.style.left = nx + 'px';
+                dataPanel.style.top = ny + 'px';
+            }
+        });
+        document.addEventListener('mouseup', () => { isDataPanelDragging = false; });
 
         // ========================================
         // 🔄 RESET ENGINE FUNCTION
@@ -1070,36 +1287,20 @@
                 }
             }
 
-            // Check if in simultaneous execution mode
+            // Check if in MERGE mode (repurposed simultaneous button)
             if (simultaneousMode) {
-                // Check if clicking on a connection number
-                for (const conn of connections) {
-                    const fromImg = images.find(img => img.id === conn.from);
-                    const toImg = images.find(img => img.id === conn.to);
-                    if (fromImg && toImg) {
-                        let midX, midY;
-                        if (conn.circleX !== undefined && conn.circleX !== null) {
-                            midX = conn.circleX;
-                            midY = conn.circleY;
-                        } else {
-                            midX = (fromImg.x + toImg.x) / 2;
-                            midY = (fromImg.y + toImg.y) / 2;
-                        }
-                        // OPTIMIZATION: Squared distance comparison
-                        const circleRadius = 16 / camera.zoom;
-                        const dx = pos.x - midX;
-                        const dy = pos.y - midY;
-                        const distanceSquared = dx * dx + dy * dy;
-
-                        if (distanceSquared < circleRadius * circleRadius) {
-                            // Toggle simultaneous flag
-                            conn.simultaneous = !conn.simultaneous;
-                            saveState();
-                            updateDataString();
-                            draw();
-                            return;
-                        }
+                const clicked = getConnectionCircleAtPoint(pos.x, pos.y);
+                if (clicked) {
+                    if (!mergeFrom) {
+                        mergeFrom = clicked;
+                    } else if (mergeFrom !== clicked) {
+                        clicked.number = mergeFrom.number; // same number = same step (simultaneous)
+                        mergeFrom = null;
+                        normalizeStepNumbers();
+                        saveState();
+                        updateConnectionCount();
                     }
+                    draw();
                 }
                 return;
             }
@@ -1410,6 +1611,8 @@
 
         // Keyboard events
         document.addEventListener('keydown', (e) => {
+            // Don't hijack keys while typing in a field (pop-out inputs, modals, etc.)
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             // Don't handle keyboard shortcuts when a modal is open
             if (nameModal.style.display === 'block') return;
             if (renumberModal.style.display === 'block') return;
@@ -1567,6 +1770,11 @@
                 const fromImg = imageMap.get(conn.from);
                 const toImg = imageMap.get(conn.to);
                 if (fromImg && toImg) {
+                    // Colour for this connection: its multithread group colour, or blue
+                    const connColor = colorForStep(conn.number);
+                    ctx.strokeStyle = connColor;
+                    ctx.lineWidth = 3 / camera.zoom;
+
                     // Calculate default midpoint
                     let midX, midY;
 
@@ -1636,21 +1844,21 @@
                     // Draw number in a circle at the calculated/stored position
                     const circleRadius = 16 / camera.zoom;
 
-                    // Draw white circle background (or grey if simultaneous)
-                    ctx.fillStyle = conn.simultaneous ? '#e0e0e0' : '#ffffff';
+                    // Draw white circle background (or a light tint of the group colour)
+                    ctx.fillStyle = conn.simultaneous ? (connColor + '22') : '#ffffff';
                     ctx.beginPath();
                     ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Draw blue border (or purple if simultaneous)
-                    ctx.strokeStyle = conn.simultaneous ? '#673AB7' : '#2196F3';
+                    // Draw border in the group colour
+                    ctx.strokeStyle = connColor;
                     ctx.lineWidth = 2 / camera.zoom;
                     ctx.beginPath();
                     ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
                     ctx.stroke();
 
                     // Draw number
-                    ctx.fillStyle = conn.simultaneous ? '#673AB7' : '#2196F3';
+                    ctx.fillStyle = connColor;
                     ctx.font = `bold ${14 / camera.zoom}px Arial`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
@@ -1671,7 +1879,7 @@
                     ctx.rotate(angle);
 
                     // Draw arrow shape (filled triangle)
-                    ctx.fillStyle = '#2196F3';
+                    ctx.fillStyle = connColor;
                     ctx.beginPath();
                     ctx.moveTo(arrowLength / 2, 0); // Arrow tip (points forward)
                     ctx.lineTo(-arrowLength / 2, -arrowWidth / 2); // Bottom left
@@ -1685,10 +1893,6 @@
                     ctx.stroke();
 
                     ctx.restore();
-
-                    // Reset line width and stroke style for next connection
-                    ctx.lineWidth = 3 / camera.zoom;
-                    ctx.strokeStyle = '#2196F3';
                 }
             });
 
