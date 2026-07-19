@@ -1841,28 +1841,36 @@
                     // Calculate angle for arrow (from circle to target)
                     const angle = Math.atan2(toImg.y - midY, toImg.x - midX);
 
-                    // Draw number in a circle at the calculated/stored position
-                    const circleRadius = 16 / camera.zoom;
+// Draw number in a circle at the calculated/stored position
+const circleRadius = 16 / camera.zoom;
 
-                    // Draw white circle background (or a light tint of the group colour)
-                    ctx.fillStyle = conn.simultaneous ? (connColor + '22') : '#ffffff';
-                    ctx.beginPath();
-                    ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
-                    ctx.fill();
+// === STRONG WHITE BACKGROUND (this is what you wanted back) ===
+ctx.fillStyle = '#ffffff';                    // Solid white
+ctx.beginPath();
+ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
+ctx.fill();
 
-                    // Draw border in the group colour
-                    ctx.strokeStyle = connColor;
-                    ctx.lineWidth = 2 / camera.zoom;
-                    ctx.beginPath();
-                    ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
-                    ctx.stroke();
+// Optional light tint for simultaneous steps (still keeps it readable)
+if (conn.simultaneous) {
+    ctx.fillStyle = connColor + '22';         // very light tint
+    ctx.beginPath();
+    ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
+    ctx.fill();
+}
 
-                    // Draw number
-                    ctx.fillStyle = connColor;
-                    ctx.font = `bold ${14 / camera.zoom}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(conn.number.toString(), midX, midY);
+// Border
+ctx.strokeStyle = connColor;
+ctx.lineWidth = 2.5 / camera.zoom;
+ctx.beginPath();
+ctx.arc(midX, midY, circleRadius, 0, Math.PI * 2);
+ctx.stroke();
+
+// Number (dark color for maximum readability)
+ctx.fillStyle = '#111111';                    // Almost black instead of colored
+ctx.font = `bold ${14 / camera.zoom}px Arial`;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText(conn.number.toString(), midX, midY);
 
                     // Draw directional arrow RIGHT NEXT TO the number circle
                     // Position the arrow at a fixed distance from the circle center along the line direction
