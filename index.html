@@ -201,6 +201,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             z-index: 2000;
+            transition: opacity 0.45s ease;
         }
 
         #nameModal input {
@@ -302,6 +303,8 @@
         <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">Upload Coding Block/Element</button>
         <button id="connectBtn" onclick="toggleConnectMode()">Connect Block Elements</button>
         <button id="simultaneousBtn" onclick="toggleSimultaneousMode()">Merge Into One Step</button>
+        <button id="fxBtn" onclick="toggleIntersectFX()" style="background: #009688;">Intersect FX: OFF</button>
+        <button id="hoverBtn" onclick="toggleHoverPreview()" style="background: #3F51B5;">Hover Info: ON</button>
         <button onclick="undo()" style="background: #FFC107;">↶ Undo (Ctrl+Z)</button>
         <button onclick="redo()" style="background: #FFC107;">↷ Redo (Ctrl+Shift+Z)</button>
         <button onclick="zoomIn()">Zoom In (+)</button>
@@ -342,6 +345,9 @@
             </div>
             <div class="zoom-info" style="color: #673AB7; margin-top: 5px;">
                 ⇉ Give two logic lines the same number to run them simultaneously
+            </div>
+            <div class="zoom-info" style="color: #9e9e9e; margin-top: 5px;">
+                🙈 Press H to hide/unhide the hovered logic line or selected element
             </div>
             <div class="zoom-info" style="color: #000000; margin-top: 5px; font-weight: bold;">
                 ⚫ Double-click empty canvas to create vector </div> <div class="zoom-info" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
@@ -441,8 +447,14 @@
         let connectMode = false;
         let connectFrom = null;
         let simultaneousMode = false;
+        let pulseTime = 0; // Pulse animation for intersecting lines
         let mergeFrom = null;
         let imageToName = null;
+        let intersectFX = false;       // toggle: pulse + dash intersecting logic lines
+        let fxLoopRunning = false;
+        let hoveredConnection = null;  // connection circle under the cursor (for H-hide)
+        let nameModalHoverMode = false; // name modal shown as a translucent hover preview
+        let hoverPreviewEnabled = true; // toggle: show the Name dialog on hover
 
         // Per-step colouring for multithread groups
         let stepColors = {}; // stepNumber -> color (only for simultaneous groups)
@@ -645,11 +657,6 @@
 
         // ========================================
         // 🔢 NORMALIZE STEP NUMBERS
-        // Collapses the numbering to a clean 1..K sequence.
-        // Logic lines that SHARE a number become ONE step that runs
-        // its commands simultaneously.
-        //   raw:  1, 1, 3   ->   1, 1, 2
-        //         (the two 1s run at the same time; the 3 slides to 2)
         // ========================================
         function normalizeStepNumbers() {
             if (connections.length === 0) {
@@ -657,27 +664,16 @@
                 return;
             }
 
-            // Distinct numbers currently in use, sorted ascending
             const distinct = [...new Set(connections.map(c => c.number))].sort((a, b) => a - b);
-
-            // Map each distinct number to its sequential rank (1-based)
             const rankMap = new Map();
             distinct.forEach((num, i) => rankMap.set(num, i + 1));
-
-            // Re-label every connection with its normalized step number
             connections.forEach(c => { c.number = rankMap.get(c.number); });
-
-            // The next brand-new connection appends after the last step
             connectionCounter = distinct.length + 1;
 
-            // Derive simultaneity: a step shared by more than one line is simultaneous
             const counts = {};
             connections.forEach(c => { counts[c.number] = (counts[c.number] || 0) + 1; });
             connections.forEach(c => { c.simultaneous = counts[c.number] > 1; });
 
-            // Assign a DISTINCT color to each simultaneous (multithread) group.
-            // Single/sequential steps stay the default blue; each group of
-            // duplicates gets its own colour so two multithreads never clash.
             stepColors = {};
             const simulSteps = Object.keys(counts)
                 .map(Number)
@@ -701,24 +697,20 @@
                 return;
             }
 
-            // Resolve a block's display name for the output
             const nameOf = (id) => {
                 const img = images.find(i => i.id === id);
                 if (!img) return '???';
                 return img.fullName || img.name || (img.isDot ? 'Unnamed Dot' : 'Unnamed Block');
             };
 
-            // Group connections by their (normalized) step number
             const groups = new Map();
             connections.forEach(conn => {
                 if (!groups.has(conn.number)) groups.set(conn.number, []);
                 groups.get(conn.number).push(conn);
             });
 
-            // Steps in order
             const steps = [...groups.keys()].sort((a, b) => a - b);
 
-            // Clear and rebuild
             dataStringDiv.innerHTML = '';
 
             const addLine = (text, color) => {
@@ -737,7 +729,6 @@
                     const conn = group[0];
                     addLine(`[${step}] ${nameOf(conn.from)} → ${nameOf(conn.to)}`, color);
                 } else {
-                    // One step, multiple commands running at the same time
                     addLine(`[${step}] ⇉ Simultaneous (${group.length}):`, color);
                     group.forEach(conn => {
                         addLine(`      ${nameOf(conn.from)} → ${nameOf(conn.to)}`, color);
@@ -745,7 +736,6 @@
                 }
             });
 
-            // Keep the pop-out panel in sync with every data change
             renderDataPanel();
         }
 
@@ -756,7 +746,6 @@
         function toggleConnectMode() {
             connectMode = !connectMode;
             if (connectMode) {
-                // Turn off simultaneous mode if it's on
                 if (simultaneousMode) {
                     toggleSimultaneousMode();
                 }
@@ -776,7 +765,6 @@
         function toggleSimultaneousMode() {
             simultaneousMode = !simultaneousMode;
             if (simultaneousMode) {
-                // Turn off connect mode if it's on
                 if (connectMode) {
                     toggleConnectMode();
                 }
@@ -792,6 +780,47 @@
                 container.style.cursor = 'grab';
             }
             draw();
+        }
+
+        // ========================================
+        // 🌊 INTERSECT FX (pulse + dash on crossing logic lines)
+        // ========================================
+        function toggleIntersectFX() {
+            intersectFX = !intersectFX;
+            const btn = document.getElementById('fxBtn');
+            btn.textContent = intersectFX ? 'Intersect FX: ON' : 'Intersect FX: OFF';
+            btn.style.background = intersectFX ? '#E91E63' : '#009688';
+            if (intersectFX) startFxLoop(); else draw();
+        }
+
+        function startFxLoop() {
+            if (!fxLoopRunning) {
+                fxLoopRunning = true;
+                requestAnimationFrame(fxLoop);
+            }
+        }
+
+        function fxLoop() {
+            if (!intersectFX) { fxLoopRunning = false; return; }
+            pulseTime += 0.12;
+            draw();
+            requestAnimationFrame(fxLoop);
+        }
+
+        function toggleHoverPreview() {
+            hoverPreviewEnabled = !hoverPreviewEnabled;
+            const btn = document.getElementById('hoverBtn');
+            btn.textContent = hoverPreviewEnabled ? 'Hover Info: ON' : 'Hover Info: OFF';
+            btn.style.background = hoverPreviewEnabled ? '#3F51B5' : '#9e9e9e';
+            if (!hoverPreviewEnabled && nameModalHoverMode) {
+                nameModalHoverMode = false;
+                nameModal.style.display = 'none';
+                nameModal.style.opacity = '1';
+                nameModal.style.pointerEvents = 'auto';
+                nameModal.style.transform = 'translate(-50%, -50%)';
+                nameModal.style.left = '50%';
+                nameModal.style.top = '50%';
+            }
         }
 
         function toggleInfoSection() {
@@ -811,6 +840,12 @@
 
         function openNameModal(image) {
             imageToName = image;
+            nameModalHoverMode = false;
+            nameModal.style.opacity = '1';
+            nameModal.style.pointerEvents = 'auto';
+            nameModal.style.transform = 'translate(-50%, -50%)';
+            nameModal.style.left = '50%';
+            nameModal.style.top = '50%';
             nameInput.value = image.name || '';
             fullNameInput.value = image.fullName || '';
             nameModal.style.display = 'block';
@@ -819,6 +854,9 @@
 
         function closeNameModal() {
             nameModal.style.display = 'none';
+            nameModal.style.opacity = '1';
+            nameModal.style.pointerEvents = 'auto';
+            nameModalHoverMode = false;
             imageToName = null;
         }
 
@@ -865,10 +903,8 @@
             closeRenumberModal();
         }
 
-        // Handle Enter key in name inputs
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                // Move to full name field if empty, otherwise save
                 if (!fullNameInput.value.trim()) {
                     fullNameInput.focus();
                 } else {
@@ -887,7 +923,6 @@
             }
         });
 
-        // Handle Enter/Escape in the renumber input
         numberInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 saveNumber();
@@ -911,7 +946,6 @@
             dataPanel.style.display = 'none';
         }
 
-        // Builds the rich, editable step view inside the pop-out panel
         function renderDataPanel() {
             const content = document.getElementById('dataPanelContent');
             if (!content) return;
@@ -927,7 +961,6 @@
                 return img.fullName || img.name || (img.isDot ? 'Unnamed Dot' : 'Unnamed Block');
             };
 
-            // Group connections by step number
             const groups = new Map();
             connections.forEach(conn => {
                 if (!groups.has(conn.number)) groups.set(conn.number, []);
@@ -975,7 +1008,7 @@
                             conn.number = v;
                             normalizeStepNumbers();
                             saveState();
-                            updateConnectionCount(); // re-normalizes, updates data string + this panel
+                            updateConnectionCount();
                             draw();
                         }
                     });
@@ -993,11 +1026,10 @@
             });
         }
 
-        // Make the pop-out panel draggable by its header
         let isDataPanelDragging = false;
         let dataPanelDragStart = { x: 0, y: 0 };
         dataPanelHeader.addEventListener('mousedown', (e) => {
-            if (e.target.tagName === 'BUTTON') return; // don't drag when hitting the close button
+            if (e.target.tagName === 'BUTTON') return;
             isDataPanelDragging = true;
             const rect = dataPanel.getBoundingClientRect();
             dataPanelDragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -1029,7 +1061,6 @@
                 historyStack = [];
                 historyIndex = -1;
 
-                // Turn off any active modes
                 if (connectMode) toggleConnectMode();
                 if (simultaneousMode) toggleSimultaneousMode();
 
@@ -1046,12 +1077,10 @@
         // UNDO/REDO SYSTEM
         // ========================================
         function saveState() {
-            // Remove any "future" states if we're in the middle of history
             if (historyIndex < historyStack.length - 1) {
                 historyStack = historyStack.slice(0, historyIndex + 1);
             }
 
-            // Create state snapshot
             const state = {
                 images: images.map(img => ({
                     id: img.id,
@@ -1063,6 +1092,7 @@
                     height: img.height,
                     rotation: img.rotation,
                     isDot: img.isDot || false,
+                    hidden: img.hidden || false,
                     imageData: img.isDot ? null : img.img.src
                 })),
                 connections: JSON.parse(JSON.stringify(connections)),
@@ -1071,7 +1101,6 @@
 
             historyStack.push(state);
 
-            // Limit history size
             if (historyStack.length > MAX_HISTORY) {
                 historyStack.shift();
             } else {
@@ -1094,13 +1123,11 @@
         }
 
         function restoreState(state) {
-            // Clear current state
             images = [];
             connections = state.connections;
             connectionCounter = state.connectionCounter;
             selectedImage = null;
 
-            // Restore images (including dots)
             let loadedCount = 0;
             if (state.images.length === 0) {
                 updateImageCount();
@@ -1112,7 +1139,6 @@
 
             state.images.forEach(imgData => {
                 if (imgData.isDot) {
-                    // Restore dot (no image loading needed)
                     images.push({
                         img: null,
                         id: imgData.id,
@@ -1123,7 +1149,8 @@
                         width: imgData.width,
                         height: imgData.height,
                         rotation: imgData.rotation,
-                        isDot: true
+                        isDot: true,
+                        hidden: imgData.hidden || false
                     });
                     loadedCount++;
                     if (loadedCount === state.images.length) {
@@ -1133,7 +1160,6 @@
                         draw();
                     }
                 } else {
-                    // Restore image block
                     const img = new Image();
                     img.onload = () => {
                         images.push({
@@ -1146,7 +1172,8 @@
                             width: imgData.width,
                             height: imgData.height,
                             rotation: imgData.rotation,
-                            isDot: false
+                            isDot: false,
+                            hidden: imgData.hidden || false
                         });
                         loadedCount++;
                         if (loadedCount === state.images.length) {
@@ -1170,7 +1197,6 @@
             };
         }
 
-        // Check if point is inside an image
         function isPointInImage(x, y, image) {
             const dx = x - image.x;
             const dy = y - image.y;
@@ -1183,30 +1209,26 @@
                    Math.abs(rotatedY) < image.height / 2;
         }
 
-        // Check if point is near rotation handle
         function isPointInRotateHandle(x, y, image) {
             const angle = image.rotation;
             const handleDistance = image.height / 2 + 30;
             const handleX = image.x + Math.sin(angle) * handleDistance;
             const handleY = image.y - Math.cos(angle) * handleDistance;
-            // OPTIMIZATION: Squared distance comparison
             const dx = x - handleX;
             const dy = y - handleY;
             const distanceSquared = dx * dx + dy * dy;
-            return distanceSquared < 225; // 15^2 = 225
+            return distanceSquared < 225;
         }
 
-        // Check if point is near resize handle (bottom-right corner)
         function isPointInResizeHandle(x, y, image) {
             const cos = Math.cos(image.rotation);
             const sin = Math.sin(image.rotation);
             const cornerX = image.x + (image.width / 2) * cos - (image.height / 2) * sin;
             const cornerY = image.y + (image.width / 2) * sin + (image.height / 2) * cos;
-            // OPTIMIZATION: Squared distance comparison
             const dx = x - cornerX;
             const dy = y - cornerY;
             const distanceSquared = dx * dx + dy * dy;
-            return distanceSquared < 225; // 15^2 = 225
+            return distanceSquared < 225;
         }
 
         function getImageAtPoint(x, y) {
@@ -1218,7 +1240,6 @@
             return null;
         }
 
-        // Helper: return the connection whose step circle is at the given point (or null)
         function getConnectionCircleAtPoint(x, y) {
             for (const conn of connections) {
                 const fromImg = images.find(img => img.id === conn.from);
@@ -1243,17 +1264,24 @@
             return null;
         }
 
+        // Segment intersection test (for the intersect FX)
+        function segIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+            const d = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4));
+            if (d === 0) return false;
+            const t = (((x1 - x3) * (y3 - y4)) - ((y1 - y3) * (x3 - x4))) / d;
+            const u = -(((x1 - x2) * (y1 - y3)) - ((y1 - y2) * (x1 - x3))) / d;
+            return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+        }
+
         // Mouse down event
         canvas.addEventListener('mousedown', (e) => {
             const pos = screenToCanvas(e.clientX, e.clientY);
 
-            // Check if clicking on a connection circle to drag it (priority check)
-            if (!connectMode && !simultaneousMode && e.button === 0) { // Left click only
+            if (!connectMode && !simultaneousMode && e.button === 0) {
                 for (const conn of connections) {
                     const fromImg = images.find(img => img.id === conn.from);
                     const toImg = images.find(img => img.id === conn.to);
                     if (fromImg && toImg) {
-                        // Calculate circle position
                         let midX, midY;
                         if (conn.circleX !== undefined && conn.circleX !== null) {
                             midX = conn.circleX;
@@ -1263,18 +1291,15 @@
                             midY = (fromImg.y + toImg.y) / 2;
                         }
 
-                        // OPTIMIZATION: Compare squared distances to avoid sqrt
                         const circleRadius = 16 / camera.zoom;
                         const dx = pos.x - midX;
                         const dy = pos.y - midY;
                         const distanceSquared = dx * dx + dy * dy;
 
                         if (distanceSquared < circleRadius * circleRadius) {
-                            // Start dragging this circle
                             isDraggingCircle = true;
                             draggedConnection = conn;
 
-                            // Toggle curve mode with Ctrl/Cmd click
                             if (e.ctrlKey || e.metaKey) {
                                 conn.curved = !conn.curved;
                                 saveState();
@@ -1294,7 +1319,7 @@
                     if (!mergeFrom) {
                         mergeFrom = clicked;
                     } else if (mergeFrom !== clicked) {
-                        clicked.number = mergeFrom.number; // same number = same step (simultaneous)
+                        clicked.number = mergeFrom.number;
                         mergeFrom = null;
                         normalizeStepNumbers();
                         saveState();
@@ -1305,7 +1330,6 @@
                 return;
             }
 
-            // Check if in connect mode
             if (connectMode) {
                 const clickedImage = getImageAtPoint(pos.x, pos.y);
                 if (clickedImage) {
@@ -1313,7 +1337,6 @@
                         connectFrom = clickedImage;
                         draw();
                     } else if (connectFrom !== clickedImage) {
-                        // Create connection
                         const existingConnection = connections.find(c =>
                             (c.from === connectFrom.id && c.to === clickedImage.id) ||
                             (c.from === clickedImage.id && c.to === connectFrom.id)
@@ -1338,18 +1361,16 @@
                         }
 
                         updateConnectionCount();
-                        connectFrom = null;
+                        connectFrom = clickedImage; // keep chaining from the element just clicked
                         draw();
                     }
                 }
                 return;
             }
 
-            // Check if clicking on an image (in reverse order for z-index)
             for (let i = images.length - 1; i >= 0; i--) {
                 const image = images[i];
 
-                // Check resize handle first (only when shift is held)
                 if (e.shiftKey && isPointInResizeHandle(pos.x, pos.y, image)) {
                     selectedImage = image;
                     isResizing = true;
@@ -1364,7 +1385,6 @@
                     return;
                 }
 
-                // Check rotation handle
                 if (isPointInRotateHandle(pos.x, pos.y, image)) {
                     selectedImage = image;
                     isRotating = true;
@@ -1373,11 +1393,9 @@
                     return;
                 }
 
-                // Then check image body
                 if (isPointInImage(pos.x, pos.y, image)) {
                     selectedImage = image;
 
-                    // Check if Alt key is held for duplication
                     if (e.altKey) {
                         isDuplicating = true;
                         duplicateSource = image;
@@ -1385,7 +1403,6 @@
                     } else {
                         isDragging = true;
                         dragStart = { x: pos.x - image.x, y: pos.y - image.y };
-                        // Move to front
                         images.splice(i, 1);
                         images.push(image);
                         updateImageList();
@@ -1396,7 +1413,6 @@
                 }
             }
 
-            // If not clicking on an image, start panning
             isPanning = true;
             dragStart = { x: e.clientX - camera.x, y: e.clientY - camera.y };
             container.classList.add('grabbing');
@@ -1407,12 +1423,10 @@
             const pos = screenToCanvas(e.clientX, e.clientY);
 
             if (isDuplicating && duplicateSource) {
-                // Just update for visual feedback (ghost will be drawn in draw())
                 dragStart.ghostX = pos.x - dragStart.x;
                 dragStart.ghostY = pos.y - dragStart.y;
                 scheduleDraw();
             } else if (isDraggingCircle && draggedConnection) {
-                // Update circle position
                 draggedConnection.circleX = pos.x;
                 draggedConnection.circleY = pos.y;
                 scheduleDraw();
@@ -1425,7 +1439,6 @@
                 selectedImage.rotation = angle - rotateStart;
                 scheduleDraw();
             } else if (isResizing && selectedImage) {
-                // Calculate distance from image center
                 const dx = pos.x - resizeStart.x;
                 const dy = pos.y - resizeStart.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1434,7 +1447,6 @@
                 );
                 const scale = Math.max(0.1, 1 + (distance - startDistance) / startDistance);
 
-                // Maintain aspect ratio
                 const aspectRatio = resizeStart.width / resizeStart.height;
                 selectedImage.width = resizeStart.width * scale;
                 selectedImage.height = resizeStart.height * scale;
@@ -1445,10 +1457,47 @@
                 camera.y = e.clientY - dragStart.y;
                 scheduleDraw();
             } else {
-                // Not dragging - check if hovering over any special handles
                 let cursorSet = false;
+                hoveredConnection = null;
 
-                // Check if hovering over connection circles
+                // Hover preview of the Name dialog (toggleable)
+                if (hoverPreviewEnabled && !connectMode && !simultaneousMode) {
+                    const hoverImg = getImageAtPoint(pos.x, pos.y);
+                    if (hoverImg) {
+                        if (!(nameModal.style.display === 'block' && !nameModalHoverMode)) {
+                            const justEntered = !nameModalHoverMode;
+                            nameModalHoverMode = true;
+                            nameInput.value = hoverImg.name || '';
+                            fullNameInput.value = hoverImg.fullName || '';
+                            nameModal.style.pointerEvents = 'none';
+                            // Follow the cursor, right next to the hovered element
+                            nameModal.style.transform = 'none';
+                            let lx = e.clientX + 18, ly = e.clientY + 18;
+                            lx = Math.max(10, Math.min(lx, window.innerWidth - 300));
+                            ly = Math.max(10, Math.min(ly, window.innerHeight - 360));
+                            nameModal.style.left = lx + 'px';
+                            nameModal.style.top = ly + 'px';
+                            if (justEntered) {
+                                // Start invisible, then fade in slowly
+                                nameModal.style.opacity = '0';
+                                nameModal.style.display = 'block';
+                                requestAnimationFrame(() => { if (nameModalHoverMode) nameModal.style.opacity = '1'; });
+                            } else {
+                                nameModal.style.display = 'block';
+                                nameModal.style.opacity = '1';
+                            }
+                        }
+                    } else if (nameModalHoverMode) {
+                        nameModalHoverMode = false;
+                        nameModal.style.display = 'none';
+                        nameModal.style.opacity = '1';
+                        nameModal.style.pointerEvents = 'auto';
+                        nameModal.style.transform = 'translate(-50%, -50%)';
+                        nameModal.style.left = '50%';
+                        nameModal.style.top = '50%';
+                    }
+                }
+
                 if (!connectMode && !simultaneousMode) {
                     for (const conn of connections) {
                         const fromImg = images.find(img => img.id === conn.from);
@@ -1463,7 +1512,6 @@
                                 midY = (fromImg.y + toImg.y) / 2;
                             }
 
-                            // OPTIMIZATION: Squared distance comparison
                             const circleRadius = 16 / camera.zoom;
                             const dx = pos.x - midX;
                             const dy = pos.y - midY;
@@ -1471,6 +1519,7 @@
 
                             if (distanceSquared < circleRadius * circleRadius) {
                                 container.style.cursor = 'grab';
+                                hoveredConnection = conn;
                                 cursorSet = true;
                                 break;
                             }
@@ -1478,7 +1527,6 @@
                     }
                 }
 
-                // Check if shift is held and hovering over a resize handle
                 if (!cursorSet && e.shiftKey && selectedImage) {
                     if (isPointInResizeHandle(pos.x, pos.y, selectedImage)) {
                         container.style.cursor = 'nwse-resize';
@@ -1486,7 +1534,6 @@
                     }
                 }
 
-                // Check if hovering over rotation handle
                 if (!cursorSet && selectedImage && !connectMode) {
                     if (isPointInRotateHandle(pos.x, pos.y, selectedImage)) {
                         container.style.cursor = 'grab';
@@ -1494,11 +1541,9 @@
                     }
                 }
 
-                // Check if hovering over any image
                 if (!cursorSet) {
                     const hoveredImage = getImageAtPoint(pos.x, pos.y);
                     if (hoveredImage) {
-                        // Show copy cursor if Alt is held
                         if (e.altKey) {
                             container.style.cursor = 'copy';
                         } else {
@@ -1508,7 +1553,6 @@
                     }
                 }
 
-                // Reset to default if not hovering over anything special
                 if (!cursorSet) {
                     if (connectMode) {
                         container.style.cursor = 'crosshair';
@@ -1521,11 +1565,9 @@
 
         // Mouse up event
         canvas.addEventListener('mouseup', (e) => {
-            // Handle duplication completion
             if (isDuplicating && duplicateSource && dragStart.ghostX !== undefined) {
                 const pos = screenToCanvas(e.clientX, e.clientY);
 
-                // Create duplicate
                 const duplicate = {
                     img: duplicateSource.isDot ? null : duplicateSource.img,
                     x: pos.x - dragStart.x,
@@ -1533,25 +1575,23 @@
                     width: duplicateSource.width,
                     height: duplicateSource.height,
                     rotation: duplicateSource.rotation,
-                    id: Date.now() + Math.random(), // Unique ID
+                    id: Date.now() + Math.random(),
                     name: duplicateSource.name ? duplicateSource.name + " Copy" : "",
                     fullName: duplicateSource.fullName ? duplicateSource.fullName + " Copy" : "",
                     isDot: duplicateSource.isDot || false
                 };
 
                 images.push(duplicate);
-                selectedImage = duplicate; // Select the new duplicate
+                selectedImage = duplicate;
                 saveState();
                 updateImageCount();
                 draw();
             }
 
-            // Save state after drag/rotate/resize operations
             if (isDragging || isRotating || isResizing) {
                 saveState();
             }
 
-            // Save state after circle dragging
             if (isDraggingCircle && draggedConnection) {
                 saveState();
             }
@@ -1574,7 +1614,6 @@
         canvas.addEventListener('dblclick', (e) => {
             const pos = screenToCanvas(e.clientX, e.clientY);
 
-            // FIRST: if double-clicking a step number circle, open the renumber modal
             const clickedConnection = getConnectionCircleAtPoint(pos.x, pos.y);
             if (clickedConnection) {
                 openRenumberModal(clickedConnection);
@@ -1583,18 +1622,16 @@
 
             const clickedImage = getImageAtPoint(pos.x, pos.y);
 
-            // If clicking on an existing image, open name modal
             if (clickedImage && !connectMode) {
                 openNameModal(clickedImage);
             }
-            // If clicking on empty space, create a dot block
             else if (!clickedImage && !connectMode && !simultaneousMode) {
                 const newDot = {
                     img: null,
                     x: pos.x,
                     y: pos.y,
-                    width: 40,  // Dot diameter
-                    height: 40, // Keep square for rotation/resize compatibility
+                    width: 40,
+                    height: 40,
                     rotation: 0,
                     id: Date.now() + Math.random(),
                     name: '',
@@ -1611,14 +1648,11 @@
 
         // Keyboard events
         document.addEventListener('keydown', (e) => {
-            // Don't hijack keys while typing in a field (pop-out inputs, modals, etc.)
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            // Don't handle keyboard shortcuts when a modal is open
-            if (nameModal.style.display === 'block') return;
+            if (nameModal.style.display === 'block' && !nameModalHoverMode) return;
             if (renumberModal.style.display === 'block') return;
 
             if (e.key === 'Delete' && selectedImage) {
-                // Remove connections associated with this image
                 connections = connections.filter(c =>
                     c.from !== selectedImage.id && c.to !== selectedImage.id
                 );
@@ -1632,8 +1666,18 @@
                 updateDataString();
                 draw();
             } else if ((e.key === 'n' || e.key === 'N') && selectedImage) {
-                // Press 'N' to name the selected image
                 openNameModal(selectedImage);
+            } else if (e.key === 'h' || e.key === 'H') {
+                // Hide/unhide the hovered logic line, else the selected element
+                if (hoveredConnection) {
+                    hoveredConnection.hidden = !hoveredConnection.hidden;
+                    saveState();
+                    draw();
+                } else if (selectedImage) {
+                    selectedImage.hidden = !selectedImage.hidden;
+                    saveState();
+                    draw();
+                }
             } else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
                 e.preventDefault();
                 undo();
@@ -1646,7 +1690,6 @@
             }
         });
 
-        // Zoom functions
         function zoomIn() {
             camera.zoom = Math.min(camera.zoom * 1.2, 3);
             updateZoomLevel();
@@ -1667,35 +1710,28 @@
             draw();
         }
 
-        // Fullscreen function
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
-                // Enter fullscreen
                 document.documentElement.requestFullscreen().catch(err => {
                     console.error('Fullscreen error:', err);
                 });
             } else {
-                // Exit fullscreen
                 document.exitFullscreen();
             }
         }
 
-        // Handle fullscreen change events
         document.addEventListener('fullscreenchange', () => {
-            // Resize canvas when entering/exiting fullscreen
             setTimeout(() => {
                 resizeCanvas();
             }, 100);
         });
 
-        // Mouse wheel zoom
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const pos = screenToCanvas(e.clientX, e.clientY);
             const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
             const newZoom = Math.max(0.1, Math.min(3, camera.zoom * zoomFactor));
 
-            // Zoom towards mouse position
             camera.x = e.clientX - (pos.x * newZoom);
             camera.y = e.clientY - (pos.y * newZoom);
             camera.zoom = newZoom;
@@ -1704,7 +1740,6 @@
             scheduleDraw();
         });
 
-        // OPTIMIZATION: Throttle draw calls with requestAnimationFrame
         function scheduleDraw() {
             if (!drawScheduled) {
                 drawScheduled = true;
@@ -1722,10 +1757,8 @@
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Apply camera transform
             ctx.setTransform(camera.zoom, 0, 0, camera.zoom, camera.x, camera.y);
 
-            // OPTIMIZATION: Create image lookup map for O(1) access (instead of O(n) find())
             const imageMap = new Map(images.map(img => [img.id, img]));
 
             // ========================================
@@ -1735,50 +1768,102 @@
             ctx.lineWidth = 1 / camera.zoom;
             ctx.beginPath();
 
-            // Calculate visible area in world coordinates
             const visibleLeft = -camera.x / camera.zoom;
             const visibleTop = -camera.y / camera.zoom;
             const visibleRight = (canvas.width - camera.x) / camera.zoom;
             const visibleBottom = (canvas.height - camera.y) / camera.zoom;
 
-            // Draw grid lines only in visible area (with some padding)
             const gridSize = 100;
             const startX = Math.floor(visibleLeft / gridSize) * gridSize;
             const endX = Math.ceil(visibleRight / gridSize) * gridSize;
             const startY = Math.floor(visibleTop / gridSize) * gridSize;
             const endY = Math.ceil(visibleBottom / gridSize) * gridSize;
 
-            // Draw all vertical lines in one path
             for (let x = startX; x <= endX; x += gridSize) {
                 ctx.moveTo(x, startY);
                 ctx.lineTo(x, endY);
             }
 
-            // Draw all horizontal lines in same path
             for (let y = startY; y <= endY; y += gridSize) {
                 ctx.moveTo(startX, y);
                 ctx.lineTo(endX, y);
             }
 
-            // Single stroke call for entire grid
             ctx.stroke();
 
             // Draw connections between images with numbers and directional arrows
             ctx.strokeStyle = '#2196F3';
             ctx.lineWidth = 3 / camera.zoom;
+
+            // Pulse + intersection detection for the intersect FX
+            const pulseAlpha = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(pulseTime));
+            const intersectingSet = new Set();
+            if (intersectFX) {
+                // Actual drawn segments of a connection: from->mid and mid->to
+                const segsOf = (conn) => {
+                    const a = imageMap.get(conn.from), b = imageMap.get(conn.to);
+                    if (!a || !b) return null;
+                    const mx = (conn.circleX ?? (a.x + b.x) / 2);
+                    const my = (conn.circleY ?? (a.y + b.y) / 2);
+                    return [[a.x, a.y, mx, my], [mx, my, b.x, b.y]];
+                };
+                // Strict interior crossing (ignores lines merely touching at a shared node)
+                const strictCross = (x1, y1, x2, y2, x3, y3, x4, y4) => {
+                    const d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+                    if (d === 0) return false;
+                    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d;
+                    const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / d;
+                    const e = 1e-6;
+                    return t > e && t < 1 - e && u > e && u < 1 - e;
+                };
+                for (let a = 0; a < connections.length; a++) {
+                    for (let b = a + 1; b < connections.length; b++) {
+                        const c1 = connections[a], c2 = connections[b];
+                        if (c1.hidden || c2.hidden) continue;
+                        const s1 = segsOf(c1), s2 = segsOf(c2);
+                        if (!s1 || !s2) continue;
+                        let hit = false;
+                        for (const A of s1) {
+                            for (const B of s2) {
+                                if (strictCross(A[0], A[1], A[2], A[3], B[0], B[1], B[2], B[3])) hit = true;
+                            }
+                        }
+                        if (hit) { intersectingSet.add(c1); intersectingSet.add(c2); }
+                    }
+                }
+            }
+
             connections.forEach(conn => {
                 const fromImg = imageMap.get(conn.from);
                 const toImg = imageMap.get(conn.to);
                 if (fromImg && toImg) {
+                    // Hidden logic line: faded grey dashed ghost, skip normal drawing
+                    if (conn.hidden) {
+                        const hmx = (conn.circleX ?? (fromImg.x + toImg.x) / 2);
+                        const hmy = (conn.circleY ?? (fromImg.y + toImg.y) / 2);
+                        ctx.save();
+                        ctx.globalAlpha = 0.35;
+                        ctx.strokeStyle = '#9e9e9e';
+                        ctx.lineWidth = 2 / camera.zoom;
+                        ctx.setLineDash([8 / camera.zoom, 6 / camera.zoom]);
+                        ctx.beginPath();
+                        ctx.moveTo(fromImg.x, fromImg.y);
+                        ctx.lineTo(toImg.x, toImg.y);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(hmx, hmy, 16 / camera.zoom, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.restore();
+                        return;
+                    }
+
                     // Colour for this connection: its multithread group colour, or blue
                     const connColor = colorForStep(conn.number);
                     ctx.strokeStyle = connColor;
                     ctx.lineWidth = 3 / camera.zoom;
 
-                    // Calculate default midpoint
                     let midX, midY;
 
-                    // Use stored circle position if it exists, otherwise calculate default
                     if (conn.circleX !== undefined && conn.circleX !== null) {
                         midX = conn.circleX;
                         midY = conn.circleY;
@@ -1786,63 +1871,57 @@
                         midX = (fromImg.x + toImg.x) / 2;
                         midY = (fromImg.y + toImg.y) / 2;
 
-                        // Calculate line length
                         const lineLength = Math.sqrt((toImg.x - fromImg.x)**2 + (toImg.y - fromImg.y)**2);
 
-                        // Calculate approximate radius of images (diagonal / 2)
                         const fromImgRadius = Math.sqrt(fromImg.width**2 + fromImg.height**2) / 2;
                         const toImgRadius = Math.sqrt(toImg.width**2 + toImg.height**2) / 2;
 
-                        // Minimum clearance from image edges (FIXED world-space, not zoom-adjusted)
                         const minClearance = 35;
 
-                        // Check if midpoint is too close to either image
                         const distFromStart = lineLength / 2;
                         const distFromEnd = lineLength / 2;
 
-                        // If midpoint would be inside or too close to "from" image, push it forward
                         if (distFromStart < fromImgRadius + minClearance) {
                             const pushRatio = (fromImgRadius + minClearance) / lineLength;
                             midX = fromImg.x + (toImg.x - fromImg.x) * pushRatio;
                             midY = fromImg.y + (toImg.y - fromImg.y) * pushRatio;
                         }
-                        // If midpoint would be inside or too close to "to" image, push it backward
                         else if (distFromEnd < toImgRadius + minClearance) {
                             const pushRatio = 1 - ((toImgRadius + minClearance) / lineLength);
                             midX = fromImg.x + (toImg.x - fromImg.x) * pushRatio;
                             midY = fromImg.y + (toImg.y - fromImg.y) * pushRatio;
                         }
 
-                        // IMPORTANT: Store the calculated position so it doesn't recalculate every frame
                         conn.circleX = midX;
                         conn.circleY = midY;
                     }
 
                     // Draw line (curved if specified, straight otherwise)
+                    // Intersect FX: pulse + dash the line only (colours & numbers untouched)
+                    const fxActive = intersectFX && intersectingSet.has(conn);
+                    ctx.save();
+                    if (fxActive) {
+                        ctx.globalAlpha = pulseAlpha;
+                        ctx.setLineDash([10 / camera.zoom, 6 / camera.zoom]);
+                    }
                     ctx.beginPath();
                     ctx.moveTo(fromImg.x, fromImg.y);
 
                     if (conn.curved) {
-                        // For a quadratic bezier that passes THROUGH the midpoint,
-                        // we need to calculate the control point
-                        // Control point formula: C = 2*M - (P0 + P1)/2
                         const controlX = 2 * midX - (fromImg.x + toImg.x) / 2;
                         const controlY = 2 * midY - (fromImg.y + toImg.y) / 2;
-
-                        // Draw smooth bezier curve THROUGH the circle position
                         ctx.quadraticCurveTo(controlX, controlY, toImg.x, toImg.y);
                     } else {
-                        // Draw bent line (two straight segments)
                         ctx.lineTo(midX, midY);
                         ctx.lineTo(toImg.x, toImg.y);
                     }
                     ctx.stroke();
+                    ctx.restore();
 
-                    // Calculate angle for arrow (from circle to target)
                     const angle = Math.atan2(toImg.y - midY, toImg.x - midX);
 
-// Draw number in a circle at the calculated/stored position
-const circleRadius = 16 / camera.zoom;
+            // Draw number in a circle at the calculated/stored position
+                   const circleRadius = 16 / camera.zoom;
 
 // === STRONG WHITE BACKGROUND (this is what you wanted back) ===
 ctx.fillStyle = '#ffffff';                    // Solid white
@@ -1872,13 +1951,10 @@ ctx.textAlign = 'center';
 ctx.textBaseline = 'middle';
 ctx.fillText(conn.number.toString(), midX, midY);
 
-                    // Draw directional arrow RIGHT NEXT TO the number circle
-                    // Position the arrow at a fixed distance from the circle center along the line direction
-                    const arrowDistance = 28 / camera.zoom; // Distance from circle center to arrow
+                    const arrowDistance = 28 / camera.zoom;
                     const arrowX = midX + Math.cos(angle) * arrowDistance;
                     const arrowY = midY + Math.sin(angle) * arrowDistance;
 
-                    // Arrow dimensions (smaller and more compact)
                     const arrowLength = 16 / camera.zoom;
                     const arrowWidth = 10 / camera.zoom;
 
@@ -1886,16 +1962,14 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     ctx.translate(arrowX, arrowY);
                     ctx.rotate(angle);
 
-                    // Draw arrow shape (filled triangle)
                     ctx.fillStyle = connColor;
                     ctx.beginPath();
-                    ctx.moveTo(arrowLength / 2, 0); // Arrow tip (points forward)
-                    ctx.lineTo(-arrowLength / 2, -arrowWidth / 2); // Bottom left
-                    ctx.lineTo(-arrowLength / 2, arrowWidth / 2); // Top left
+                    ctx.moveTo(arrowLength / 2, 0);
+                    ctx.lineTo(-arrowLength / 2, -arrowWidth / 2);
+                    ctx.lineTo(-arrowLength / 2, arrowWidth / 2);
                     ctx.closePath();
                     ctx.fill();
 
-                    // Draw white outline for better visibility
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 1.5 / camera.zoom;
                     ctx.stroke();
@@ -1906,7 +1980,6 @@ ctx.fillText(conn.number.toString(), midX, midY);
 
             // Draw images
 
-            // Hoist label collision detection functions (defined once, not per image)
             const pointInRect = (px, py, rx, ry, rw, rh) => {
                 return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
             };
@@ -1926,13 +1999,36 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     return true;
                 }
 
-                return lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx + rw, ry) || // Top edge
-                       lineIntersectsLine(x1, y1, x2, y2, rx + rw, ry, rx + rw, ry + rh) || // Right edge
-                       lineIntersectsLine(x1, y1, x2, y2, rx, ry + rh, rx + rw, ry + rh) || // Bottom edge
-                       lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx, ry + rh); // Left edge
+                return lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx + rw, ry) ||
+                       lineIntersectsLine(x1, y1, x2, y2, rx + rw, ry, rx + rw, ry + rh) ||
+                       lineIntersectsLine(x1, y1, x2, y2, rx, ry + rh, rx + rw, ry + rh) ||
+                       lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx, ry + rh);
             };
 
             images.forEach(image => {
+                // Hidden element: faded ghost with grey dashed outline, skip normal drawing
+                if (image.hidden) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.12;
+                    ctx.translate(image.x, image.y);
+                    ctx.rotate(image.rotation);
+                    if (image.isDot) {
+                        ctx.fillStyle = '#000000';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, image.width / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        ctx.drawImage(image.img, -image.width / 2, -image.height / 2, image.width, image.height);
+                    }
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2 / camera.zoom;
+                    ctx.setLineDash([8 / camera.zoom, 6 / camera.zoom]);
+                    ctx.strokeRect(-image.width / 2, -image.height / 2, image.width, image.height);
+                    ctx.restore();
+                    return;
+                }
+
                 ctx.save();
                 ctx.translate(image.x, image.y);
                 ctx.rotate(image.rotation);
@@ -1941,46 +2037,38 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 // ⚫ DRAW DOT OR IMAGE
                 // ========================================
                 if (image.isDot) {
-                    // Draw solid black circle (super fast!)
                     ctx.fillStyle = '#000000';
                     ctx.beginPath();
                     ctx.arc(0, 0, image.width / 2, 0, Math.PI * 2);
                     ctx.fill();
                 } else {
-                    // Draw image block (existing code)
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
                     ctx.drawImage(image.img, -image.width / 2, -image.height / 2, image.width, image.height);
                 }
 
-                // Draw selection and controls if selected or in connect mode
                 if (image === selectedImage || (connectMode && image === connectFrom)) {
                     ctx.strokeStyle = connectMode && image === connectFrom ? '#FF9800' : '#2196F3';
                     ctx.lineWidth = 2 / camera.zoom;
                     ctx.strokeRect(-image.width / 2, -image.height / 2, image.width, image.height);
                 }
 
-                // Draw rotation handle if selected (not in connect mode)
                 if (image === selectedImage && !connectMode) {
                     const handleDistance = image.height / 2 + 30;
 
-                    // Draw rotation icon (circular arrow)
                     ctx.strokeStyle = '#2196F3';
                     ctx.fillStyle = '#ffffff';
                     ctx.lineWidth = 2 / camera.zoom;
 
-                    // Circle background
                     ctx.beginPath();
                     ctx.arc(0, -handleDistance, 12 / camera.zoom, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.stroke();
 
-                    // Draw circular arrow
                     ctx.beginPath();
                     ctx.arc(0, -handleDistance, 7 / camera.zoom, -Math.PI * 0.7, Math.PI * 0.7);
                     ctx.stroke();
 
-                    // Arrow head
                     const arrowSize = 4 / camera.zoom;
                     ctx.beginPath();
                     ctx.moveTo(7 / camera.zoom * Math.cos(Math.PI * 0.7), -handleDistance + 7 / camera.zoom * Math.sin(Math.PI * 0.7));
@@ -1988,13 +2076,11 @@ ctx.fillText(conn.number.toString(), midX, midY);
                               -handleDistance + (7 / camera.zoom - arrowSize) * Math.sin(Math.PI * 0.7) + arrowSize * Math.cos(Math.PI * 0.7));
                     ctx.stroke();
 
-                    // Line to handle
                     ctx.beginPath();
                     ctx.moveTo(0, -image.height / 2);
                     ctx.lineTo(0, -handleDistance);
                     ctx.stroke();
 
-                    // Draw resize handle at bottom-right corner
                     const cornerX = image.width / 2;
                     const cornerY = image.height / 2;
 
@@ -2002,7 +2088,6 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 2 / camera.zoom;
 
-                    // Draw square resize handle
                     const handleSize = 10 / camera.zoom;
                     ctx.fillRect(cornerX - handleSize / 2, cornerY - handleSize / 2, handleSize, handleSize);
                     ctx.strokeRect(cornerX - handleSize / 2, cornerY - handleSize / 2, handleSize, handleSize);
@@ -2010,109 +2095,88 @@ ctx.fillText(conn.number.toString(), midX, midY);
 
                 ctx.restore();
 
-                // Draw image name next to image (in canvas coordinates, not rotated)
                 if (image.name) {
-                    // OPTIMIZATION: No need for save/restore here as we're not changing transform
-
-                    // Set up text properties first to measure it
                     ctx.font = `${14 / camera.zoom}px Arial`;
                     const textWidth = ctx.measureText(image.name).width;
                     const textHeight = 14 / camera.zoom;
                     const padding = 6 / camera.zoom;
                     const offset = 10 / camera.zoom;
 
-                    // Define possible label positions (right, top, bottom, left)
                     const possiblePositions = [
-                        { x: image.x + image.width / 2 + offset, y: image.y, align: 'left' }, // Right
-                        { x: image.x, y: image.y - image.height / 2 - offset - textHeight / 2, align: 'center' }, // Top
-                        { x: image.x, y: image.y + image.height / 2 + offset + textHeight / 2, align: 'center' }, // Bottom
-                        { x: image.x - image.width / 2 - offset - textWidth, y: image.y, align: 'left' } // Left
+                        { x: image.x + image.width / 2 + offset, y: image.y, align: 'left' },
+                        { x: image.x, y: image.y - image.height / 2 - offset - textHeight / 2, align: 'center' },
+                        { x: image.x, y: image.y + image.height / 2 + offset + textHeight / 2, align: 'center' },
+                        { x: image.x - image.width / 2 - offset - textWidth, y: image.y, align: 'left' }
                     ];
 
-                    // Function to check if label overlaps with rotation handle
                     const labelOverlapsRotationHandle = (labelX, labelY, labelWidth, labelHeight, align) => {
-                        // Only check if this is the selected image (rotation handle only shown when selected)
                         if (image !== selectedImage || connectMode) return false;
 
-                        // Calculate rotation handle position (above the image)
                         const handleDistance = image.height / 2 + 30;
                         const handleRadius = 12 / camera.zoom;
                         const angle = image.rotation;
                         const handleX = image.x + Math.sin(angle) * handleDistance;
                         const handleY = image.y - Math.cos(angle) * handleDistance;
 
-                        // Calculate actual label bounds based on alignment
                         let boxX, boxY;
                         if (align === 'left') {
                             boxX = labelX - padding;
                             boxY = labelY - labelHeight / 2 - padding;
-                        } else { // center
+                        } else {
                             boxX = labelX - labelWidth / 2 - padding;
                             boxY = labelY - labelHeight / 2 - padding;
                         }
                         const boxWidth = labelWidth + padding * 2;
                         const boxHeight = labelHeight + padding * 2;
 
-                        // Check if rotation handle circle intersects with label box
-                        // Find closest point in rectangle to circle center
                         const closestX = Math.max(boxX, Math.min(handleX, boxX + boxWidth));
                         const closestY = Math.max(boxY, Math.min(handleY, boxY + boxHeight));
 
-                        // Calculate distance from circle center to closest point
                         const distanceX = handleX - closestX;
                         const distanceY = handleY - closestY;
                         const distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
 
-                        // Check if distance is less than radius (with some padding)
                         const safeRadius = handleRadius + 10 / camera.zoom;
                         return distanceSquared < (safeRadius * safeRadius);
                     }
 
-                    // Function to check if a label box intersects with a line
                     const labelIntersectsLine = (labelX, labelY, labelWidth, labelHeight, align) => {
-                        // Calculate actual label bounds based on alignment
                         let boxX, boxY;
                         if (align === 'left') {
                             boxX = labelX - padding;
                             boxY = labelY - labelHeight / 2 - padding;
-                        } else { // center
+                        } else {
                             boxX = labelX - labelWidth / 2 - padding;
                             boxY = labelY - labelHeight / 2 - padding;
                         }
                         const boxWidth = labelWidth + padding * 2;
                         const boxHeight = labelHeight + padding * 2;
 
-                        // Check against rotation handle first
                         if (labelOverlapsRotationHandle(labelX, labelY, labelWidth, labelHeight, align)) {
                             return true;
                         }
 
-                        // NEW: Check collision with OTHER images
                         for (const otherImage of images) {
-                            if (otherImage === image) continue; // Skip self
+                            if (otherImage === image) continue;
 
-                            // Simple rectangle overlap test
                             const imgLeft = otherImage.x - otherImage.width / 2;
                             const imgRight = otherImage.x + otherImage.width / 2;
                             const imgTop = otherImage.y - otherImage.height / 2;
                             const imgBottom = otherImage.y + otherImage.height / 2;
 
-                            // Check if label box overlaps image bounds
                             if (!(boxX + boxWidth < imgLeft ||
                                   boxX > imgRight ||
                                   boxY + boxHeight < imgTop ||
                                   boxY > imgBottom)) {
-                                return true; // Collision found
+                                return true;
                             }
                         }
 
-                        // Check against all connection lines
                         for (const conn of connections) {
                             const fromImg = imageMap.get(conn.from);
                             const toImg = imageMap.get(conn.to);
                             if (!fromImg || !toImg) continue;
 
-                            // Check if line intersects with label box
                             if (lineIntersectsRect(
                                 fromImg.x, fromImg.y, toImg.x, toImg.y,
                                 boxX, boxY, boxWidth, boxHeight
@@ -2123,8 +2187,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
                         return false;
                     };
 
-                    // Find the best position with least collisions
-                    let bestPosition = possiblePositions[0]; // Default to right
+                    let bestPosition = possiblePositions[0];
                     let foundClearSpot = false;
 
                     for (const pos of possiblePositions) {
@@ -2135,29 +2198,25 @@ ctx.fillText(conn.number.toString(), midX, midY);
                         }
                     }
 
-                    // Use the best position
                     const labelX = bestPosition.x;
                     const labelY = bestPosition.y;
                     const textAlign = bestPosition.align;
 
-                    // Calculate box position based on alignment
                     let boxX, boxY;
                     if (textAlign === 'left') {
                         boxX = labelX - padding;
                         boxY = labelY - textHeight / 2 - padding;
-                    } else { // center
+                    } else {
                         boxX = labelX - textWidth / 2 - padding;
                         boxY = labelY - textHeight / 2 - padding;
                     }
 
-                    // Draw white background box with border
                     ctx.fillStyle = '#ffffff';
-                    ctx.strokeStyle = foundClearSpot ? '#4CAF50' : '#FF9800'; // Green if clear, orange if still colliding
+                    ctx.strokeStyle = foundClearSpot ? '#4CAF50' : '#FF9800';
                     ctx.lineWidth = 1.5 / camera.zoom;
                     ctx.fillRect(boxX, boxY, textWidth + padding * 2, textHeight + padding * 2);
                     ctx.strokeRect(boxX, boxY, textWidth + padding * 2, textHeight + padding * 2);
 
-                    // Draw the text on top of the background
                     ctx.fillStyle = '#333';
                     ctx.textAlign = textAlign;
                     ctx.textBaseline = 'middle';
@@ -2168,11 +2227,10 @@ ctx.fillText(conn.number.toString(), midX, midY);
             // Draw ghost image while duplicating
             if (isDuplicating && duplicateSource && dragStart.ghostX !== undefined) {
                 ctx.save();
-                ctx.globalAlpha = 0.5; // 50% transparent
+                ctx.globalAlpha = 0.5;
                 ctx.translate(dragStart.ghostX, dragStart.ghostY);
                 ctx.rotate(duplicateSource.rotation);
 
-                // Draw the ghost (dot or image)
                 if (duplicateSource.isDot) {
                     ctx.fillStyle = '#000000';
                     ctx.beginPath();
@@ -2185,17 +2243,15 @@ ctx.fillText(conn.number.toString(), midX, midY);
                                   duplicateSource.width, duplicateSource.height);
                 }
 
-                // Draw dashed outline
                 ctx.strokeStyle = '#2196F3';
                 ctx.lineWidth = 2 / camera.zoom;
                 ctx.setLineDash([10 / camera.zoom, 5 / camera.zoom]);
                 ctx.strokeRect(-duplicateSource.width / 2, -duplicateSource.height / 2,
                                duplicateSource.width, duplicateSource.height);
-                ctx.setLineDash([]); // Reset dash
+                ctx.setLineDash([]);
 
                 ctx.restore();
 
-                // Dim the original slightly
                 ctx.save();
                 ctx.globalAlpha = 0.7;
                 ctx.translate(duplicateSource.x, duplicateSource.y);
@@ -2220,9 +2276,8 @@ ctx.fillText(conn.number.toString(), midX, midY);
 
         // Save Engine Function
         function saveEngine() {
-            // Prepare engine data
             const engineData = {
-                version: "1.1", // Bumped version for dot support
+                version: "1.1",
                 timestamp: new Date().toISOString(),
                 camera: {
                     x: camera.x,
@@ -2239,21 +2294,22 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     height: img.height,
                     rotation: img.rotation,
                     isDot: img.isDot || false,
-                    imageData: img.isDot ? null : img.img.src // No image data for dots
+                    hidden: img.hidden || false,
+                    imageData: img.isDot ? null : img.img.src
                 })),
                 connections: connections.map(conn => ({
                     from: conn.from,
                     to: conn.to,
                     number: conn.number,
-                    simultaneous: conn.simultaneous || false
+                    simultaneous: conn.simultaneous || false,
+                    hidden: conn.hidden || false,
+                    curved: conn.curved || false
                 })),
                 connectionCounter: connectionCounter
             };
 
-            // Convert to JSON
             const jsonString = JSON.stringify(engineData, null, 2);
 
-            // Create download link
             const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -2277,17 +2333,14 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 try {
                     const engineData = JSON.parse(ev.target.result);
 
-                    // Validate data
                     if (!engineData.version || !engineData.images) {
                         throw new Error('Invalid engine file format');
                     }
 
-                    // Clear current canvas
                     images = [];
                     connections = [];
                     selectedImage = null;
 
-                    // Restore camera position
                     if (engineData.camera) {
                         camera.x = engineData.camera.x;
                         camera.y = engineData.camera.y;
@@ -2295,17 +2348,14 @@ ctx.fillText(conn.number.toString(), midX, midY);
                         updateZoomLevel();
                     }
 
-                    // Restore connection counter
                     if (engineData.connectionCounter) {
                         connectionCounter = engineData.connectionCounter;
                     }
 
-                    // Load images (including dots)
                     let loadedCount = 0;
                     const totalImages = engineData.images.length;
 
                     if (totalImages === 0) {
-                        // No images to load
                         connections = engineData.connections || [];
                         updateImageCount();
                         updateConnectionCount();
@@ -2316,7 +2366,6 @@ ctx.fillText(conn.number.toString(), midX, midY);
 
                     engineData.images.forEach(imgData => {
                         if (imgData.isDot) {
-                            // Load dot (no image loading needed)
                             const newDot = {
                                 img: null,
                                 x: imgData.x,
@@ -2327,7 +2376,8 @@ ctx.fillText(conn.number.toString(), midX, midY);
                                 id: imgData.id,
                                 name: imgData.name || '',
                                 fullName: imgData.fullName || '',
-                                isDot: true
+                                isDot: true,
+                                hidden: imgData.hidden || false
                             };
                             images.push(newDot);
 
@@ -2342,7 +2392,6 @@ ctx.fillText(conn.number.toString(), midX, midY);
                                 alert('✅ Engine loaded successfully!');
                             }
                         } else {
-                            // Load image block
                             const img = new Image();
                             img.onload = () => {
                                 const newImage = {
@@ -2355,13 +2404,13 @@ ctx.fillText(conn.number.toString(), midX, midY);
                                     id: imgData.id,
                                     name: imgData.name || '',
                                     fullName: imgData.fullName || '',
-                                    isDot: false
+                                    isDot: false,
+                                    hidden: imgData.hidden || false
                                 };
                                 images.push(newImage);
 
                                 loadedCount++;
                                 if (loadedCount === totalImages) {
-                                    // All images loaded, restore connections
                                     connections = engineData.connections || [];
                                     updateImageCount();
                                     updateConnectionCount();
@@ -2395,7 +2444,6 @@ ctx.fillText(conn.number.toString(), midX, midY);
             };
             reader.readAsText(file);
 
-            // Reset file input
             e.target.value = '';
         });
     </script>
