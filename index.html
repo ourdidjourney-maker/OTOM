@@ -319,6 +319,13 @@
         <button id="toggleInfoBtn" onclick="toggleInfoSection()" style="float: right; font-size: 16px; padding: 4px 10px; background: #607D8B; margin-top: 5px;" title="Show/Hide Info">▼</button>
         <input type="file" id="loadInput" accept=".json" style="display: none;">
 
+        <div style="margin-top: 10px; font-size: 12px; color: #333; display: flex; align-items: center; gap: 8px;">
+            <span title="How close the mouse must get before hidden objects glow">🔦 Glow Radius</span>
+            <input type="range" id="glowRadiusSlider" min="80" max="700" value="320" step="10"
+                   oninput="setGlowRadius(this.value)" style="flex: 1; min-width: 130px;">
+            <span id="glowRadiusValue" style="width: 34px; text-align: right; font-variant-numeric: tabular-nums;">320</span>
+        </div>
+
         <!-- Collapsible Info Section -->
         <div id="infoSection">
             <div class="zoom-info">Zoom: <span id="zoomLevel">100%</span></div>
@@ -469,7 +476,7 @@
         // GLOW_RADIUS : how close (in canvas units) the mouse must be before a
         //               hidden object starts brightening. BIGGER = it senses the
         //               mouse from farther away. Try 200 (tight) to 500 (wide).
-        const GLOW_RADIUS = 320;
+        let GLOW_RADIUS = 320;
         // GLOW_MAX    : peak opacity (0..1) when the mouse sits right on the
         //               object's center. 1.0 = fully solid at the center.
         const GLOW_MAX = 1.0;
@@ -847,6 +854,13 @@
             pulseTime += 0.12;
             draw();
             requestAnimationFrame(fxLoop);
+        }
+
+        // Slider: left = tighter (mouse must get closer), right = glow starts earlier
+        function setGlowRadius(v) {
+            GLOW_RADIUS = parseInt(v, 10);
+            document.getElementById('glowRadiusValue').textContent = GLOW_RADIUS;
+            if (proximityGlow) draw();
         }
 
         // ✨ Proximity glow toggle + smooth animation loop
