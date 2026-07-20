@@ -306,6 +306,7 @@
         <button id="fxBtn" onclick="toggleIntersectFX()" style="background: #009688;">Intersect FX: OFF</button>
         <button id="hoverBtn" onclick="toggleHoverPreview()" style="background: #3F51B5;">Hover Info: ON</button>
         <button id="hiddenOutlineBtn" onclick="cycleHiddenOutline()" style="background: #455A64;">Hidden Outline: 100%</button>
+        <button id="glowBtn" onclick="toggleProximityGlow()" style="background: #455A64;">Proximity Glow: OFF</button>
         <button onclick="undo()" style="background: #FFC107;">↶ Undo (Ctrl+Z)</button>
         <button onclick="redo()" style="background: #FFC107;">↷ Redo (Ctrl+Shift+Z)</button>
         <button onclick="zoomIn()">Zoom In (+)</button>
@@ -457,6 +458,27 @@
         let nameModalHoverMode = false; // name modal shown as a translucent hover preview
         let hoverPreviewEnabled = true; // toggle: show the Name dialog on hover
         let hiddenOutlineMode = 0; // 0 = full, 1 = 50%, 2 = off (dashed outline on hidden elements)
+
+        // ✨ PROXIMITY GLOW — hidden objects brighten as the mouse nears their CENTER
+        let proximityGlow = false;   // toggled by the "Proximity Glow" button
+        let glowLoopRunning = false; // keeps the animation frame-loop alive while ON
+        let mouseCanvasX = 0, mouseCanvasY = 0; // live mouse position in canvas space
+        // ======================================================================
+        // 🎛️  PROXIMITY GLOW TUNING — tweak these three numbers to taste
+        // ----------------------------------------------------------------------
+        // GLOW_RADIUS : how close (in canvas units) the mouse must be before a
+        //               hidden object starts brightening. BIGGER = it senses the
+        //               mouse from farther away. Try 200 (tight) to 500 (wide).
+        const GLOW_RADIUS = 320;
+        // GLOW_MAX    : peak opacity (0..1) when the mouse sits right on the
+        //               object's center. 1.0 = fully solid at the center.
+        const GLOW_MAX = 1.0;
+        // GLOW_EASE   : ⏱️ THE ANIMATION TIMING. How fast the brightness chases
+        //               its target each frame (0..1). LOWER = slower, dreamier
+        //               fade-in/out. 0.05 = very smooth & slow, 0.10 = balanced,
+        //               0.20 = snappy, 0.35 = nearly instant. THIS is your dial.
+        const GLOW_EASE = 0.06;
+        // ======================================================================
 
         // Per-step colouring for multithread groups
         let stepColors = {}; // stepNumber -> color (only for simultaneous groups)
@@ -825,6 +847,28 @@
             pulseTime += 0.12;
             draw();
             requestAnimationFrame(fxLoop);
+        }
+
+        // ✨ Proximity glow toggle + smooth animation loop
+        function toggleProximityGlow() {
+            proximityGlow = !proximityGlow;
+            const btn = document.getElementById('glowBtn');
+            btn.textContent = proximityGlow ? 'Proximity Glow: ON' : 'Proximity Glow: OFF';
+            btn.style.background = proximityGlow ? '#E91E63' : '#455A64';
+            if (proximityGlow) startGlowLoop(); else draw();
+        }
+
+        function startGlowLoop() {
+            if (!glowLoopRunning) {
+                glowLoopRunning = true;
+                requestAnimationFrame(glowLoop);
+            }
+        }
+
+        function glowLoop() {
+            if (!proximityGlow) { glowLoopRunning = false; return; }
+            draw(); // redraw every frame so the eased brightness keeps chasing the mouse
+            requestAnimationFrame(glowLoop);
         }
 
         function cycleHiddenOutline() {
@@ -1453,6 +1497,8 @@
         // Mouse move event
         canvas.addEventListener('mousemove', (e) => {
             const pos = screenToCanvas(e.clientX, e.clientY);
+            mouseCanvasX = pos.x;
+            mouseCanvasY = pos.y;
 
             if (isDuplicating && duplicateSource) {
                 dragStart.ghostX = pos.x - dragStart.x;
@@ -2042,9 +2088,30 @@ ctx.fillText(conn.number.toString(), midX, midY);
             images.forEach(image => {
                 // Hidden element: faded ghost with grey dashed outline, skip normal drawing
                 if (image.hidden) {
-                    const hiddenGhost = [0.7, 0.15, 0][image.hiddenLevel || 0];
+                    // Base opacity from the eye-cycle level (70% / 15% / off)
+                    const base = [0.7, 0.15, 0][image.hiddenLevel || 0];
+
+                    // ✨ PROXIMITY GLOW: target brightness rises as the mouse nears the center.
+                    // The value is EASED toward its target each frame (see GLOW_EASE) so it
+                    // fades in/out smoothly instead of snapping — this is the animation.
+                    let ghostAlpha = base;
+                    if (proximityGlow) {
+                        const dx = mouseCanvasX - image.x;
+                        const dy = mouseCanvasY - image.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        let t = 1 - dist / GLOW_RADIUS;      // 1 at center, 0 at/after GLOW_RADIUS
+                        t = Math.max(0, Math.min(1, t));
+                        t = t * t * (3 - 2 * t);             // smoothstep — soft, pretty ramp
+                        const target = base + (GLOW_MAX - base) * t;
+                        if (image._glow === undefined) image._glow = base;
+                        image._glow += (target - image._glow) * GLOW_EASE; // eased chase
+                        ghostAlpha = image._glow;
+                    } else {
+                        image._glow = base; // reset so it re-fades cleanly next time it's toggled on
+                    }
+
                     ctx.save();
-                    ctx.globalAlpha = hiddenGhost;
+                    ctx.globalAlpha = ghostAlpha;
                     ctx.translate(image.x, image.y);
                     ctx.rotate(image.rotation);
                     if (image.isDot) {
