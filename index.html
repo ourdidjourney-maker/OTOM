@@ -2557,17 +2557,21 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 const hg = guides.filter(g => g.axis === 'h').map(g => g.pos);
 
                 if (elemDimRuler && guides.length) {
+                    const dimV = (im, gx) => {
+                        if (dimEdge) { const dir = gx >= im.x ? 1 : -1, ex = extentAlong(im, dir, 0); drawDim(im.x + dir * ex, im.y, gx, im.y, Math.round(Math.max(0, Math.abs(gx - im.x) - ex) * z) + 'px', '#FF9800'); }
+                        else drawDim(im.x, im.y, gx, im.y, Math.round(Math.abs(gx - im.x) * z) + 'px', '#FF9800');
+                    };
+                    const dimH = (im, gy) => {
+                        if (dimEdge) { const dir = gy >= im.y ? 1 : -1, ey = extentAlong(im, 0, dir); drawDim(im.x, im.y + dir * ey, im.x, gy, Math.round(Math.max(0, Math.abs(gy - im.y) - ey) * z) + 'px', '#FF9800'); }
+                        else drawDim(im.x, im.y, im.x, gy, Math.round(Math.abs(gy - im.y) * z) + 'px', '#FF9800');
+                    };
                     vis.forEach(im => {
-                        if (vg.length) {
-                            let nv = vg[0]; for (const x of vg) if (Math.abs(x - im.x) < Math.abs(nv - im.x)) nv = x;
-                            if (dimEdge) { const dir = nv >= im.x ? 1 : -1, ex = extentAlong(im, dir, 0); drawDim(im.x + dir * ex, im.y, nv, im.y, Math.round(Math.max(0, Math.abs(nv - im.x) - ex) * z) + 'px', '#FF9800'); }
-                            else drawDim(im.x, im.y, nv, im.y, Math.round(Math.abs(nv - im.x) * z) + 'px', '#FF9800');
-                        }
-                        if (hg.length) {
-                            let nh = hg[0]; for (const y of hg) if (Math.abs(y - im.y) < Math.abs(nh - im.y)) nh = y;
-                            if (dimEdge) { const diry = nh >= im.y ? 1 : -1, ey = extentAlong(im, 0, diry); drawDim(im.x, im.y + diry * ey, im.x, nh, Math.round(Math.max(0, Math.abs(nh - im.y) - ey) * z) + 'px', '#FF9800'); }
-                            else drawDim(im.x, im.y, im.x, nh, Math.round(Math.abs(nh - im.y) * z) + 'px', '#FF9800');
-                        }
+                        let vl = null, vr = null;
+                        for (const x of vg) { if (x <= im.x) { if (vl === null || x > vl) vl = x; } else { if (vr === null || x < vr) vr = x; } }
+                        if (vl !== null) dimV(im, vl); if (vr !== null) dimV(im, vr);
+                        let ha = null, hb = null;
+                        for (const y of hg) { if (y <= im.y) { if (ha === null || y > ha) ha = y; } else { if (hb === null || y < hb) hb = y; } }
+                        if (ha !== null) dimH(im, ha); if (hb !== null) dimH(im, hb);
                     });
                 }
 
