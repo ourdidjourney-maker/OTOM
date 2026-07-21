@@ -301,12 +301,43 @@
     <div id="controls">
         <input type="file" id="fileInput" accept="image/*" style="display: none;">
         <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">Upload Coding Block/Element</button>
+        <button onclick="document.getElementById('bgInput').click()" style="background: #607D8B;">Upload Background</button>
+        <button id="bgMoveBtn" onclick="toggleBgMove()" style="background: #607D8B;">Move Background</button>
+        <button onclick="addGuide('h')" style="background: #2196F3;">+ H Ruler</button>
+        <button onclick="addGuide('v')" style="background: #2196F3;">+ V Ruler</button>
+        <button id="rulerRadarBtn" onclick="toggleRulerRadar()" style="background: #455A64;">Ruler Radar: OFF</button>
+        <button id="rulerMouseBtn" onclick="toggleRulerMouse()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Mouse↔Ruler: ON</button>
+        <button id="rulerDiagBtn" onclick="toggleRulerDiagonal()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Ruler Arrows: 4-way</button>
+        <button id="rulerDimsBtn" onclick="toggleRulerDims()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Ruler Dims: OFF</button>
+        <span style="font-size: 11px; color: #333;">BG</span>
+        <input type="range" id="bgOpacity" min="0" max="100" value="100" oninput="setBgOpacity(this.value)" style="width: 70px; vertical-align: middle;">
+        <input type="file" id="bgInput" accept="image/*" style="display: none;">
         <button id="connectBtn" onclick="toggleConnectMode()">Connect Block Elements</button>
         <button id="simultaneousBtn" onclick="toggleSimultaneousMode()">Merge Into One Step</button>
         <button id="fxBtn" onclick="toggleIntersectFX()" style="background: #009688;">Intersect FX: OFF</button>
         <button id="hoverBtn" onclick="toggleHoverPreview()" style="background: #3F51B5;">Hover Info: ON</button>
         <button id="hiddenOutlineBtn" onclick="cycleHiddenOutline()" style="background: #455A64;">Hidden Outline: 100%</button>
         <button id="glowBtn" onclick="toggleProximityGlow()" style="background: #455A64;">Proximity Glow: OFF</button>
+        <button id="borderBtn" onclick="toggleProximityBorder()" style="background: #455A64;">Proximity Border: OFF</button>
+        <button id="lineBtn" onclick="toggleLineMode()" style="background: #795548;">Draw Line</button>
+        <button id="textBtn" onclick="toggleTextMode()" style="background: #795548;">Add Text</button>
+        <input type="color" id="annoColor" value="#111111" title="Line / text color" style="width: 34px; height: 34px; vertical-align: middle; border: none; background: none; cursor: pointer;">
+        <select id="fontSelect" title="Font for new text" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-size: 13px;"></select>
+        <button id="radarBtn" onclick="toggleHiddenRadar()" style="background: #455A64;">Hidden Radar: OFF</button>
+        <span style="font-size: 11px; color: #333; margin-left: 4px;">Arrows</span>
+        <input type="range" id="radarMaxSlider" min="1" max="30" value="6" step="1" oninput="setRadarMax(this.value)" style="width: 80px; vertical-align: middle;">
+        <span id="radarMaxValue" style="font-size: 11px; color: #333; width: 18px; display: inline-block;">6</span>
+        <button id="radarEdgeBtn" onclick="toggleRadarEdge()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Radar: Center</button>
+        <button id="elemRadarBtn" onclick="toggleElementRadar()" style="background: #455A64;">Element Radar: OFF</button>
+        <span style="font-size: 11px; color: #333; margin-left: 4px;">Arrows</span>
+        <input type="range" id="elemRadarMaxSlider" min="1" max="30" value="6" step="1" oninput="setElementRadarMax(this.value)" style="width: 80px; vertical-align: middle;">
+        <span id="elemRadarMaxValue" style="font-size: 11px; color: #333; width: 18px; display: inline-block;">6</span>
+        <button id="elemDimElemBtn" onclick="toggleElemDimElem()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Elem↔Elem: OFF</button>
+        <button id="elemDimRulerBtn" onclick="toggleElemDimRuler()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Elem↔Ruler: OFF</button>
+        <button id="dimEdgeBtn" onclick="toggleDimEdge()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Dim: Center</button>
+        <button id="centerModeBtn" onclick="toggleCenterMode()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Center Mode: OFF</button>
+        <button id="centerDimsBtn" onclick="toggleCenterDims()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Center Dims: OFF</button>
+        <button id="clearCenterBtn" onclick="clearCenter()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Clear Center</button>
         <button onclick="undo()" style="background: #FFC107;">↶ Undo (Ctrl+Z)</button>
         <button onclick="redo()" style="background: #FFC107;">↷ Redo (Ctrl+Shift+Z)</button>
         <button onclick="zoomIn()">Zoom In (+)</button>
@@ -381,6 +412,16 @@
     <div id="canvasContainer">
         <canvas id="canvas"></canvas>
     </div>
+
+    <div id="hiddenRadar" style="position: fixed; pointer-events: none; z-index: 3000; display: none; font: bold 12px Arial; color: #111; background: rgba(255,255,255,0.92); border: 1px solid #999; border-radius: 6px; padding: 2px 7px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.25);"></div>
+
+    <input id="textEntry" type="text" placeholder="type text, Enter to place" style="position: fixed; display: none; z-index: 2500; padding: 6px 8px; border: 2px solid #009688; border-radius: 6px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
+
+    <div id="rulerRadarBox" style="position: fixed; pointer-events: none; z-index: 3000; display: none; font: bold 11px Arial; color: #0d47a1; background: rgba(227,242,253,0.95); border: 1px solid #2196F3; border-radius: 6px; padding: 3px 7px; white-space: nowrap; line-height: 1.4; box-shadow: 0 1px 4px rgba(0,0,0,0.25);"></div>
+
+    <div id="grabHint" style="position: fixed; pointer-events: none; z-index: 3000; display: none; font: bold 11px Arial; color: #fff; background: rgba(33,33,33,0.85); border-radius: 5px; padding: 2px 7px; white-space: nowrap;"></div>
+
+    <div id="elementRadarBox" style="position: fixed; pointer-events: none; z-index: 3000; display: none; font: bold 12px Arial; color: #1b5e20; background: rgba(232,245,233,0.95); border: 1px solid #4CAF50; border-radius: 6px; padding: 2px 7px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.25);"></div>
 
     <div id="nameModal">
         <h3 style="margin-top: 0;">Name Coding Block/Element:</h3>
@@ -459,12 +500,40 @@
         let pulseTime = 0; // Pulse animation for intersecting lines
         let mergeFrom = null;
         let imageToName = null;
+        // Annotation tools + hidden radar
+        let lineMode = false, textMode = false;
+        let isDrawingLine = false, newLine = null;
+        let pendingTextPos = null;
+        let background = null;         // { img, x, y, opacity, scale }
+        let bgMoveMode = false, bgDragging = false;
+        let guides = [];           // { axis:'h'|'v', pos } ruler guides
+        let draggingGuide = null;
+        let rulerRadar = false;
+        let rulerMouseRadar = true;  // mouse-to-ruler cursor readout
+        let rulerDiagonal = false;   // 8-way diagonal (toward H∩V intersection) vs 4-way
+        let rulerDims = false;       // dimension lines with arrows between parallel rulers
+        let hiddenRadar = false;
+        let elementRadar = false;      // radar for visible (unhidden) elements
+        let elementRadarMax = 6;
+        let elemDimElem = false;   // dimension lines: element ↔ nearest element
+        let elemDimRuler = false;  // dimension lines: element ↔ nearest rulers
+        let dimEdge = false;       // measure from element edges (true) or centers (false)
+        let centerMode = false;    // click canvas to place the center anchor
+        let centerPoint = null;    // { x, y } user-placed measurement anchor
+        let centerDims = false;    // measure everything to the center anchor
+        let radarMax = 6; // how many nearest hidden objects the radar shows
+        let radarEdge = false; // radar distance from object edge (true) or center (false)
+        const LINE_THICKNESS = 3;
         let intersectFX = false;       // toggle: pulse + dash intersecting logic lines
         let fxLoopRunning = false;
         let hoveredConnection = null;  // connection circle under the cursor (for H-hide)
         let nameModalHoverMode = false; // name modal shown as a translucent hover preview
         let hoverPreviewEnabled = true; // toggle: show the Name dialog on hover
         let hiddenOutlineMode = 0; // 0 = full, 1 = 50%, 2 = off (dashed outline on hidden elements)
+        let proximityBorder = false;   // thickens a hidden object's border as the mouse nears (overrides outline modes)
+        const BORDER_PROX = 130;       // within this, the border is at its thickest (1.5x)
+        const BORDER_RANGE = 240;      // border fades in within this distance; invisible beyond it
+        const BORDER_EASE = 0.10;      // fade smoothness (lower = slower, softer fade-in/out)
 
         // ✨ PROXIMITY GLOW — hidden objects brighten as the mouse nears their CENTER
         let proximityGlow = false;   // toggled by the "Proximity Glow" button
@@ -880,9 +949,17 @@
         }
 
         function glowLoop() {
-            if (!proximityGlow) { glowLoopRunning = false; return; }
-            draw(); // redraw every frame so the eased brightness keeps chasing the mouse
+            if (!proximityGlow && !proximityBorder) { glowLoopRunning = false; return; }
+            draw(); // redraw every frame so glow AND border react to the moving mouse
             requestAnimationFrame(glowLoop);
+        }
+
+        function toggleProximityBorder() {
+            proximityBorder = !proximityBorder;
+            const btn = document.getElementById('borderBtn');
+            btn.textContent = proximityBorder ? 'Proximity Border: ON' : 'Proximity Border: OFF';
+            btn.style.background = proximityBorder ? '#E91E63' : '#455A64';
+            if (proximityBorder) startGlowLoop(); else draw();
         }
 
         function cycleHiddenOutline() {
@@ -1179,9 +1256,11 @@
                     height: img.height,
                     rotation: img.rotation,
                     isDot: img.isDot || false,
+                    kind: img.kind || (img.isDot ? 'dot' : 'image'),
+                    color: img.color, text: img.text, font: img.font, fontSize: img.fontSize,
                     hidden: img.hidden || false,
                     hiddenLevel: img.hiddenLevel || 0,
-                    imageData: img.isDot ? null : img.img.src
+                    imageData: (img.kind && img.kind !== 'image') ? null : (img.isDot ? null : (img.img ? img.img.src : null))
                 })),
                 connections: JSON.parse(JSON.stringify(connections)),
                 connectionCounter: connectionCounter
@@ -1226,7 +1305,7 @@
             }
 
             state.images.forEach(imgData => {
-                if (imgData.isDot) {
+                if (imgData.isDot || (imgData.kind && imgData.kind !== 'image')) {
                     images.push({
                         img: null,
                         id: imgData.id,
@@ -1237,7 +1316,9 @@
                         width: imgData.width,
                         height: imgData.height,
                         rotation: imgData.rotation,
-                        isDot: true,
+                        isDot: imgData.isDot || false,
+                        kind: imgData.kind || (imgData.isDot ? 'dot' : 'image'),
+                        color: imgData.color, text: imgData.text, font: imgData.font, fontSize: imgData.fontSize,
                         hidden: imgData.hidden || false,
                         hiddenLevel: imgData.hiddenLevel || 0
                     });
@@ -1262,6 +1343,7 @@
                             height: imgData.height,
                             rotation: imgData.rotation,
                             isDot: false,
+                            kind: 'image',
                             hidden: imgData.hidden || false,
                             hiddenLevel: imgData.hiddenLevel || 0
                         });
@@ -1295,8 +1377,9 @@
             const rotatedX = dx * cos - dy * sin;
             const rotatedY = dx * sin + dy * cos;
 
+            const hitH = (image.kind === 'line') ? Math.max(image.height, 16) : image.height;
             return Math.abs(rotatedX) < image.width / 2 &&
-                   Math.abs(rotatedY) < image.height / 2;
+                   Math.abs(rotatedY) < hitH / 2;
         }
 
         function isPointInRotateHandle(x, y, image) {
@@ -1366,6 +1449,35 @@
         // Mouse down event
         canvas.addEventListener('mousedown', (e) => {
             const pos = screenToCanvas(e.clientX, e.clientY);
+
+            // Text tool: click to place text
+            if (textMode) {
+                beginTextEntry(pos, e.clientX, e.clientY);
+                return;
+            }
+            // Line tool: press-drag-release
+            if (lineMode) {
+                isDrawingLine = true;
+                newLine = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+                return;
+            }
+            // Center anchor placement
+            if (centerMode) {
+                centerPoint = { x: pos.x, y: pos.y };
+                draw();
+                return;
+            }
+            // Background drag mode
+            if (bgMoveMode && background) {
+                bgDragging = true;
+                dragStart = { x: pos.x - background.x, y: pos.y - background.y };
+                return;
+            }
+            // Grab a ruler guide
+            for (const g of guides) {
+                if (g.axis === 'h') { if (Math.abs(e.clientY - (g.pos * camera.zoom + camera.y)) < 6) { draggingGuide = g; return; } }
+                else { if (Math.abs(e.clientX - (g.pos * camera.zoom + camera.x)) < 6) { draggingGuide = g; return; } }
+            }
 
             if (!connectMode && !simultaneousMode && e.button === 0) {
                 for (const conn of connections) {
@@ -1513,6 +1625,27 @@
             const pos = screenToCanvas(e.clientX, e.clientY);
             mouseCanvasX = pos.x;
             mouseCanvasY = pos.y;
+            updateHiddenRadar(e.clientX, e.clientY);
+            updateRulerRadar(e.clientX, e.clientY);
+            updateElementRadar(e.clientX, e.clientY);
+            layoutCursorOverlays(e.clientX, e.clientY);
+
+            if (isDrawingLine && newLine) {
+                newLine.x2 = pos.x; newLine.y2 = pos.y;
+                scheduleDraw();
+                return;
+            }
+            if (bgDragging && background) {
+                background.x = pos.x - dragStart.x;
+                background.y = pos.y - dragStart.y;
+                scheduleDraw();
+                return;
+            }
+            if (draggingGuide) {
+                draggingGuide.pos = draggingGuide.axis === 'h' ? pos.y : pos.x;
+                scheduleDraw();
+                return;
+            }
 
             if (isDuplicating && duplicateSource) {
                 dragStart.ghostX = pos.x - dragStart.x;
@@ -1525,6 +1658,8 @@
             } else if (isDragging && selectedImage) {
                 selectedImage.x = pos.x - dragStart.x;
                 selectedImage.y = pos.y - dragStart.y;
+                container.style.cursor = 'grabbing';
+                showGrabHint('Grabbed!', e.clientX, e.clientY);
                 scheduleDraw();
             } else if (isRotating && selectedImage) {
                 const angle = Math.atan2(pos.y - selectedImage.y, pos.x - selectedImage.x);
@@ -1551,6 +1686,7 @@
             } else {
                 let cursorSet = false;
                 hoveredConnection = null;
+                hideGrabHint();
 
                 // Hover preview of the Name dialog (toggleable)
                 if (hoverPreviewEnabled && !connectMode && !simultaneousMode) {
@@ -1636,11 +1772,8 @@
                 if (!cursorSet) {
                     const hoveredImage = getImageAtPoint(pos.x, pos.y);
                     if (hoveredImage) {
-                        if (e.altKey) {
-                            container.style.cursor = 'copy';
-                        } else {
-                            container.style.cursor = 'move';
-                        }
+                        container.style.cursor = e.altKey ? 'copy' : 'grab';
+                        showGrabHint(e.altKey ? 'Copy' : 'Grab', e.clientX, e.clientY);
                         cursorSet = true;
                     }
                 }
@@ -1653,15 +1786,33 @@
                     }
                 }
             }
+            layoutCursorOverlays(e.clientX, e.clientY);
         });
 
         // Mouse up event
         canvas.addEventListener('mouseup', (e) => {
+            if (bgDragging) { bgDragging = false; return; }
+            if (draggingGuide) { draggingGuide = null; return; }
+            // Finalize a drawn line
+            if (isDrawingLine && newLine) {
+                isDrawingLine = false;
+                const { x1, y1, x2, y2 } = newLine; newLine = null;
+                const len = Math.hypot(x2 - x1, y2 - y1);
+                if (len > 4) {
+                    const el = { img: null, kind: 'line', x: (x1 + x2) / 2, y: (y1 + y2) / 2,
+                        width: len, height: LINE_THICKNESS, rotation: Math.atan2(y2 - y1, x2 - x1),
+                        color: document.getElementById('annoColor').value,
+                        id: Date.now() + Math.random(), name: '', fullName: '', isDot: false, hidden: false, hiddenLevel: 0 };
+                    images.push(el); selectedImage = el; saveState(); updateImageCount();
+                }
+                draw();
+                return;
+            }
             if (isDuplicating && duplicateSource && dragStart.ghostX !== undefined) {
                 const pos = screenToCanvas(e.clientX, e.clientY);
 
                 const duplicate = {
-                    img: duplicateSource.isDot ? null : duplicateSource.img,
+                    img: (duplicateSource.kind && duplicateSource.kind !== 'image') || duplicateSource.isDot ? null : duplicateSource.img,
                     x: pos.x - dragStart.x,
                     y: pos.y - dragStart.y,
                     width: duplicateSource.width,
@@ -1670,7 +1821,10 @@
                     id: Date.now() + Math.random(),
                     name: duplicateSource.name ? duplicateSource.name + " Copy" : "",
                     fullName: duplicateSource.fullName ? duplicateSource.fullName + " Copy" : "",
-                    isDot: duplicateSource.isDot || false
+                    isDot: duplicateSource.isDot || false,
+                    kind: duplicateSource.kind || (duplicateSource.isDot ? 'dot' : 'image'),
+                    color: duplicateSource.color, text: duplicateSource.text, font: duplicateSource.font, fontSize: duplicateSource.fontSize,
+                    hidden: false, hiddenLevel: 0
                 };
 
                 images.push(duplicate);
@@ -1698,6 +1852,7 @@
             isPanning = false;
             container.classList.remove('grabbing');
             container.classList.remove('resizing');
+            hideGrabHint();
         });
 
         // ========================================
@@ -1705,6 +1860,20 @@
         // ========================================
         canvas.addEventListener('dblclick', (e) => {
             const pos = screenToCanvas(e.clientX, e.clientY);
+
+            // Double-click the center anchor to delete it
+            if (centerPoint) {
+                const sx = centerPoint.x * camera.zoom + camera.x, sy = centerPoint.y * camera.zoom + camera.y;
+                if (Math.hypot(e.clientX - sx, e.clientY - sy) < 10) { centerPoint = null; draw(); return; }
+            }
+
+            // Double-click a ruler guide to delete it
+            for (let i = 0; i < guides.length; i++) {
+                const g = guides[i];
+                const hit = g.axis === 'h' ? Math.abs(e.clientY - (g.pos * camera.zoom + camera.y)) < 6
+                                           : Math.abs(e.clientX - (g.pos * camera.zoom + camera.x)) < 6;
+                if (hit) { guides.splice(i, 1); draw(); return; }
+            }
 
             const clickedConnection = getConnectionCircleAtPoint(pos.x, pos.y);
             if (clickedConnection) {
@@ -1885,6 +2054,16 @@
 
             ctx.stroke();
 
+            // Background image layer (above grid, below all elements)
+            if (background && background.img) {
+                ctx.save();
+                ctx.globalAlpha = background.opacity;
+                const bw = background.img.width * background.scale;
+                const bh = background.img.height * background.scale;
+                ctx.drawImage(background.img, background.x - bw / 2, background.y - bh / 2, bw, bh);
+                ctx.restore();
+            }
+
             // Draw connections between images with numbers and directional arrows
             ctx.strokeStyle = '#2196F3';
             ctx.lineWidth = 3 / camera.zoom;
@@ -1893,15 +2072,6 @@
             const pulseAlpha = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(pulseTime));
             const intersectingSet = new Set();
             if (intersectFX) {
-                // Actual drawn segments of a connection: from->mid and mid->to
-                const segsOf = (conn) => {
-                    const a = imageMap.get(conn.from), b = imageMap.get(conn.to);
-                    if (!a || !b) return null;
-                    const mx = (conn.circleX ?? (a.x + b.x) / 2);
-                    const my = (conn.circleY ?? (a.y + b.y) / 2);
-                    return [[a.x, a.y, mx, my], [mx, my, b.x, b.y]];
-                };
-                // Strict interior crossing (ignores lines merely touching at a shared node)
                 const strictCross = (x1, y1, x2, y2, x3, y3, x4, y4) => {
                     const d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
                     if (d === 0) return false;
@@ -1910,19 +2080,29 @@
                     const e = 1e-6;
                     return t > e && t < 1 - e && u > e && u < 1 - e;
                 };
-                for (let a = 0; a < connections.length; a++) {
-                    for (let b = a + 1; b < connections.length; b++) {
-                        const c1 = connections[a], c2 = connections[b];
-                        if (c1.hidden || c2.hidden) continue;
-                        const s1 = segsOf(c1), s2 = segsOf(c2);
-                        if (!s1 || !s2) continue;
+                const entries = [];
+                connections.forEach(c => {
+                    if (c.hidden) return;
+                    const a = imageMap.get(c.from), b = imageMap.get(c.to);
+                    if (!a || !b) return;
+                    const mx = (c.circleX ?? (a.x + b.x) / 2), my = (c.circleY ?? (a.y + b.y) / 2);
+                    entries.push({ ref: c, segs: [[a.x, a.y, mx, my], [mx, my, b.x, b.y]] });
+                });
+                images.forEach(im => {
+                    if (im.kind === 'line' && !im.hidden) {
+                        const cc = Math.cos(im.rotation), ss = Math.sin(im.rotation), hw = im.width / 2;
+                        entries.push({ ref: im, segs: [[im.x - cc * hw, im.y - ss * hw, im.x + cc * hw, im.y + ss * hw]] });
+                    }
+                });
+                for (let a = 0; a < entries.length; a++) {
+                    for (let b = a + 1; b < entries.length; b++) {
                         let hit = false;
-                        for (const A of s1) {
-                            for (const B of s2) {
+                        for (const A of entries[a].segs) {
+                            for (const B of entries[b].segs) {
                                 if (strictCross(A[0], A[1], A[2], A[3], B[0], B[1], B[2], B[3])) hit = true;
                             }
                         }
-                        if (hit) { intersectingSet.add(c1); intersectingSet.add(c2); }
+                        if (hit) { intersectingSet.add(entries[a].ref); intersectingSet.add(entries[b].ref); }
                     }
                 }
             }
@@ -2128,15 +2308,31 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     ctx.globalAlpha = ghostAlpha;
                     ctx.translate(image.x, image.y);
                     ctx.rotate(image.rotation);
-                    if (image.isDot) {
-                        ctx.fillStyle = '#000000';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, image.width / 2, 0, Math.PI * 2);
-                        ctx.fill();
-                    } else {
-                        ctx.drawImage(image.img, -image.width / 2, -image.height / 2, image.width, image.height);
-                    }
-                    if (hiddenOutlineMode !== 2) {
+                    drawShape(image);
+                    if (proximityBorder) {
+                        // Hidden until the mouse nears, then fades in smoothly; thickens 1.5x when really close.
+                        // Distance from the cursor to the object's nearest EDGE (0 when over it)
+                        const cos = Math.cos(-image.rotation), sin = Math.sin(-image.rotation);
+                        const ldx = (mouseCanvasX - image.x) * cos - (mouseCanvasY - image.y) * sin;
+                        const ldy = (mouseCanvasX - image.x) * sin + (mouseCanvasY - image.y) * cos;
+                        const qx = Math.max(Math.abs(ldx) - image.width / 2, 0);
+                        const qy = Math.max(Math.abs(ldy) - image.height / 2, 0);
+                        const dist = Math.sqrt(qx * qx + qy * qy);
+                        let t = 1 - dist / BORDER_RANGE;       // 1 at center, 0 at/after BORDER_RANGE
+                        t = Math.max(0, Math.min(1, t));
+                        t = t * t * (3 - 2 * t);               // smoothstep ramp
+                        if (image._bAlpha === undefined) image._bAlpha = 0;
+                        image._bAlpha += (t - image._bAlpha) * BORDER_EASE; // eased fade in/out (no flick)
+                        if (image._bAlpha > 0.01) {
+                            const near = dist < BORDER_PROX;
+                            ctx.globalAlpha = image._bAlpha;
+                            ctx.strokeStyle = '#000000';
+                            ctx.lineWidth = (near ? 3 : 2) / camera.zoom; // 3 = 50% thicker than the normal 2
+                            ctx.setLineDash([8 / camera.zoom, 6 / camera.zoom]);
+                            ctx.strokeRect(-image.width / 2, -image.height / 2, image.width, image.height);
+                        }
+                    } else if (hiddenOutlineMode !== 2) {
+                        image._bAlpha = 0;
                         ctx.globalAlpha = hiddenOutlineMode === 0 ? 1 : 0.5;
                         ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 2 / camera.zoom;
@@ -2152,18 +2348,12 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 ctx.rotate(image.rotation);
 
                 // ========================================
-                // ⚫ DRAW DOT OR IMAGE
+                // ⚫ DRAW ELEMENT (dot / image / line / text)
                 // ========================================
-                if (image.isDot) {
-                    ctx.fillStyle = '#000000';
-                    ctx.beginPath();
-                    ctx.arc(0, 0, image.width / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                } else {
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
-                    ctx.drawImage(image.img, -image.width / 2, -image.height / 2, image.width, image.height);
-                }
+                const lineFx = intersectFX && image.kind === 'line' && intersectingSet.has(image);
+                if (lineFx) { ctx.save(); ctx.globalAlpha = pulseAlpha; ctx.setLineDash([10 / camera.zoom, 6 / camera.zoom]); }
+                drawShape(image);
+                if (lineFx) ctx.restore();
 
                 if (image === selectedImage || (connectMode && image === connectFrom)) {
                     ctx.strokeStyle = connectMode && image === connectFrom ? '#FF9800' : '#2196F3';
@@ -2220,11 +2410,13 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     const padding = 6 / camera.zoom;
                     const offset = 10 / camera.zoom;
 
+                    const ew = (image.kind === 'line' || image.kind === 'text') ? 8 / camera.zoom : image.width / 2;
+                    const eh = (image.kind === 'line' || image.kind === 'text') ? 8 / camera.zoom : image.height / 2;
                     const possiblePositions = [
-                        { x: image.x + image.width / 2 + offset, y: image.y, align: 'left' },
-                        { x: image.x, y: image.y - image.height / 2 - offset - textHeight / 2, align: 'center' },
-                        { x: image.x, y: image.y + image.height / 2 + offset + textHeight / 2, align: 'center' },
-                        { x: image.x - image.width / 2 - offset - textWidth, y: image.y, align: 'left' }
+                        { x: image.x + ew + offset, y: image.y, align: 'left' },
+                        { x: image.x, y: image.y - eh - offset - textHeight / 2, align: 'center' },
+                        { x: image.x, y: image.y + eh + offset + textHeight / 2, align: 'center' },
+                        { x: image.x - ew - offset - textWidth, y: image.y, align: 'left' }
                     ];
 
                     const labelOverlapsRotationHandle = (labelX, labelY, labelWidth, labelHeight, align) => {
@@ -2342,6 +2534,165 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 }
             });
 
+            // Preview of the line currently being drawn
+            if (isDrawingLine && newLine) {
+                ctx.save();
+                ctx.strokeStyle = document.getElementById('annoColor').value;
+                ctx.lineWidth = Math.max(0.5, LINE_THICKNESS);
+                ctx.lineCap = 'round';
+                ctx.setLineDash([6 / camera.zoom, 4 / camera.zoom]);
+                ctx.beginPath();
+                ctx.moveTo(newLine.x1, newLine.y1);
+                ctx.lineTo(newLine.x2, newLine.y2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Element / center measurements: dimension lines (edge- or center-based)
+            if (elemDimElem || elemDimRuler || (centerDims && centerPoint) || centerPoint) {
+                const z = camera.zoom;
+                ctx.font = `bold ${11 / z}px Arial`;
+                const vis = images; // measure hidden elements too (they still have positions)
+                const vg = guides.filter(g => g.axis === 'v').map(g => g.pos);
+                const hg = guides.filter(g => g.axis === 'h').map(g => g.pos);
+
+                if (elemDimRuler && guides.length) {
+                    vis.forEach(im => {
+                        if (vg.length) {
+                            let nv = vg[0]; for (const x of vg) if (Math.abs(x - im.x) < Math.abs(nv - im.x)) nv = x;
+                            if (dimEdge) { const dir = nv >= im.x ? 1 : -1, ex = extentAlong(im, dir, 0); drawDim(im.x + dir * ex, im.y, nv, im.y, Math.round(Math.max(0, Math.abs(nv - im.x) - ex) * z) + 'px', '#FF9800'); }
+                            else drawDim(im.x, im.y, nv, im.y, Math.round(Math.abs(nv - im.x) * z) + 'px', '#FF9800');
+                        }
+                        if (hg.length) {
+                            let nh = hg[0]; for (const y of hg) if (Math.abs(y - im.y) < Math.abs(nh - im.y)) nh = y;
+                            if (dimEdge) { const diry = nh >= im.y ? 1 : -1, ey = extentAlong(im, 0, diry); drawDim(im.x, im.y + diry * ey, im.x, nh, Math.round(Math.max(0, Math.abs(nh - im.y) - ey) * z) + 'px', '#FF9800'); }
+                            else drawDim(im.x, im.y, im.x, nh, Math.round(Math.abs(nh - im.y) * z) + 'px', '#FF9800');
+                        }
+                    });
+                }
+
+                if (elemDimElem && vis.length >= 2) {
+                    const drawn = new Set();
+                    vis.forEach((im, i) => {
+                        let best = -1, bd = Infinity;
+                        vis.forEach((o, j) => { if (j === i) return; const d = Math.hypot(o.x - im.x, o.y - im.y); if (d < bd) { bd = d; best = j; } });
+                        if (best >= 0) {
+                            const key = i < best ? i + '-' + best : best + '-' + i;
+                            if (!drawn.has(key)) {
+                                drawn.add(key); const o = vis[best];
+                                if (dimEdge) { const dx = o.x - im.x, dy = o.y - im.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, ea = extentAlong(im, dx, dy), eb = extentAlong(o, dx, dy); drawDim(im.x + ux * ea, im.y + uy * ea, o.x - ux * eb, o.y - uy * eb, Math.round(Math.max(0, L - ea - eb) * z) + 'px', '#4CAF50'); }
+                                else drawDim(im.x, im.y, o.x, o.y, Math.round(bd * z) + 'px', '#4CAF50');
+                            }
+                        }
+                    });
+                }
+
+                // Everything measured to the user-placed center anchor
+                if (centerDims && centerPoint) {
+                    const cp = centerPoint;
+                    vis.forEach(im => {
+                        if (dimEdge) { const dx = im.x - cp.x, dy = im.y - cp.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, eb = extentAlong(im, dx, dy); drawDim(cp.x, cp.y, im.x - ux * eb, im.y - uy * eb, Math.round(Math.max(0, L - eb) * z) + 'px', '#9C27B0'); }
+                        else drawDim(cp.x, cp.y, im.x, im.y, Math.round(Math.hypot(im.x - cp.x, im.y - cp.y) * z) + 'px', '#9C27B0');
+                    });
+                    vg.forEach(x => drawDim(cp.x, cp.y, x, cp.y, Math.round(Math.abs(x - cp.x) * z) + 'px', '#9C27B0'));
+                    hg.forEach(y => drawDim(cp.x, cp.y, cp.x, y, Math.round(Math.abs(y - cp.y) * z) + 'px', '#9C27B0'));
+                }
+
+                // The center anchor dot
+                if (centerPoint) {
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = '#F44336';
+                    ctx.beginPath(); ctx.arc(centerPoint.x, centerPoint.y, 5 / z, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 / z; ctx.stroke();
+                }
+            }
+
+            // Ruler guides (drawn on top, span the visible canvas)
+            if (guides.length) {
+                ctx.save();
+                ctx.strokeStyle = '#2196F3';
+                ctx.lineWidth = 1 / camera.zoom;
+                guides.forEach(g => {
+                    ctx.beginPath();
+                    if (g.axis === 'h') { ctx.moveTo(visibleLeft, g.pos); ctx.lineTo(visibleRight, g.pos); }
+                    else { ctx.moveTo(g.pos, visibleTop); ctx.lineTo(g.pos, visibleBottom); }
+                    ctx.stroke();
+                });
+                // Per-ruler arrows + distances to nearest PARALLEL rulers (when Ruler Radar is on)
+                if (rulerRadar) {
+                    const z = camera.zoom, pad = 4 / z, th = 14 / z;
+                    ctx.font = `bold ${11 / z}px Arial`;
+                    ctx.textBaseline = 'middle';
+                    // Keep top-anchored labels just below the UI panel (screen-space, zoom-safe)
+                    const uiBottom = document.getElementById('controls').getBoundingClientRect().bottom + 12;
+                    const topWorldY = (uiBottom - camera.y) / z;
+                    const tag = (txt, x, y, align) => {
+                        ctx.textAlign = align;
+                        const w = ctx.measureText(txt).width;
+                        let bx = x; if (align === 'center') bx = x - w / 2; else if (align === 'right') bx = x - w;
+                        ctx.fillStyle = 'rgba(227,242,253,0.95)';
+                        ctx.fillRect(bx - pad, y - th / 2 - pad, w + pad * 2, th + pad * 2);
+                        ctx.strokeStyle = '#2196F3'; ctx.lineWidth = 1 / z;
+                        ctx.strokeRect(bx - pad, y - th / 2 - pad, w + pad * 2, th + pad * 2);
+                        ctx.fillStyle = '#0d47a1'; ctx.fillText(txt, x, y);
+                    };
+                    const hp = guides.filter(g => g.axis === 'h').map(g => g.pos).sort((a, b) => a - b);
+                    for (let i = 0; i < hp.length; i++) {
+                        const parts = [];
+                        if (i > 0) parts.push('↑' + Math.round((hp[i] - hp[i - 1]) * z) + 'px');
+                        if (i < hp.length - 1) parts.push('↓' + Math.round((hp[i + 1] - hp[i]) * z) + 'px');
+                        if (parts.length) tag(parts.join('  '), visibleLeft + 16 / z, hp[i], 'left');
+                    }
+                    const vp = guides.filter(g => g.axis === 'v').map(g => g.pos).sort((a, b) => a - b);
+                    for (let i = 0; i < vp.length; i++) {
+                        const parts = [];
+                        if (i > 0) parts.push('←' + Math.round((vp[i] - vp[i - 1]) * z) + 'px');
+                        if (i < vp.length - 1) parts.push('→' + Math.round((vp[i + 1] - vp[i]) * z) + 'px');
+                        if (parts.length) tag(parts.join('  '), vp[i], topWorldY, 'center');
+                    }
+                    // Cross-axis: mark every H×V crossing with its canvas position
+                    for (const hy of hp) {
+                        for (const vx of vp) {
+                            ctx.fillStyle = '#2196F3';
+                            ctx.beginPath(); ctx.arc(vx, hy, 3 / z, 0, Math.PI * 2); ctx.fill();
+                            tag('x ' + Math.round(vx) + '  y ' + Math.round(hy), vx + 9 / z, hy + 14 / z, 'left');
+                        }
+                    }
+                }
+                // Dimension lines (own toggle): thin arrowed line between each pair of parallel rulers
+                if (rulerDims) {
+                    const z = camera.zoom;
+                    ctx.font = `bold ${11 / z}px Arial`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.setLineDash([]);
+                    const uiB = document.getElementById('controls').getBoundingClientRect().bottom + 34;
+                    const dim = (ax, ay, bx, by, label) => {
+                        ctx.strokeStyle = '#2196F3'; ctx.lineWidth = 1.5 / z;
+                        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+                        const ah = 7 / z, ang = Math.atan2(by - ay, bx - ax);
+                        const head = (x, y, a) => { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - ah * Math.cos(a - 0.5), y - ah * Math.sin(a - 0.5)); ctx.lineTo(x - ah * Math.cos(a + 0.5), y - ah * Math.sin(a + 0.5)); ctx.closePath(); ctx.fillStyle = '#2196F3'; ctx.fill(); };
+                        head(ax, ay, ang + Math.PI); head(bx, by, ang);
+                        const mx = (ax + bx) / 2, my = (ay + by) / 2, w = ctx.measureText(label).width, p = 3 / z, th = 14 / z;
+                        ctx.fillStyle = '#fff'; ctx.fillRect(mx - w / 2 - p, my - th / 2 - p, w + p * 2, th + p * 2);
+                        ctx.strokeStyle = '#2196F3'; ctx.lineWidth = 1 / z; ctx.strokeRect(mx - w / 2 - p, my - th / 2 - p, w + p * 2, th + p * 2);
+                        ctx.fillStyle = '#0d47a1'; ctx.fillText(label, mx, my);
+                    };
+                    // Vertical rulers → horizontal dimension bars (stacked below the UI)
+                    const vpp = guides.filter(g => g.axis === 'v').map(g => g.pos).sort((a, b) => a - b);
+                    for (let i = 1; i < vpp.length; i++) {
+                        const wy = (uiB + (i - 1) * 26 - camera.y) / z;
+                        dim(vpp[i - 1], wy, vpp[i], wy, Math.round((vpp[i] - vpp[i - 1]) * z) + 'px');
+                    }
+                    // Horizontal rulers → vertical dimension bars (stacked near the left)
+                    const hpp = guides.filter(g => g.axis === 'h').map(g => g.pos).sort((a, b) => a - b);
+                    for (let i = 1; i < hpp.length; i++) {
+                        const wx = ((40 + (i - 1) * 26) - camera.x) / z;
+                        dim(wx, hpp[i - 1], wx, hpp[i], Math.round((hpp[i] - hpp[i - 1]) * z) + 'px');
+                    }
+                }
+                ctx.restore();
+            }
+
             // Draw ghost image while duplicating
             if (isDuplicating && duplicateSource && dragStart.ghostX !== undefined) {
                 ctx.save();
@@ -2349,17 +2700,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 ctx.translate(dragStart.ghostX, dragStart.ghostY);
                 ctx.rotate(duplicateSource.rotation);
 
-                if (duplicateSource.isDot) {
-                    ctx.fillStyle = '#000000';
-                    ctx.beginPath();
-                    ctx.arc(0, 0, duplicateSource.width / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                } else {
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
-                    ctx.drawImage(duplicateSource.img, -duplicateSource.width / 2, -duplicateSource.height / 2,
-                                  duplicateSource.width, duplicateSource.height);
-                }
+                drawShape(duplicateSource);
 
                 ctx.strokeStyle = '#2196F3';
                 ctx.lineWidth = 2 / camera.zoom;
@@ -2375,15 +2716,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 ctx.translate(duplicateSource.x, duplicateSource.y);
                 ctx.rotate(duplicateSource.rotation);
 
-                if (duplicateSource.isDot) {
-                    ctx.fillStyle = '#000000';
-                    ctx.beginPath();
-                    ctx.arc(0, 0, duplicateSource.width / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                } else {
-                    ctx.drawImage(duplicateSource.img, -duplicateSource.width / 2, -duplicateSource.height / 2,
-                                  duplicateSource.width, duplicateSource.height);
-                }
+                drawShape(duplicateSource);
 
                 ctx.restore();
             }
@@ -2412,8 +2745,11 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     height: img.height,
                     rotation: img.rotation,
                     isDot: img.isDot || false,
+                    kind: img.kind || (img.isDot ? 'dot' : 'image'),
+                    color: img.color, text: img.text, font: img.font, fontSize: img.fontSize,
                     hidden: img.hidden || false,
-                    imageData: img.isDot ? null : img.img.src
+                    hiddenLevel: img.hiddenLevel || 0,
+                    imageData: (img.kind && img.kind !== 'image') ? null : (img.isDot ? null : (img.img ? img.img.src : null))
                 })),
                 connections: connections.map(conn => ({
                     from: conn.from,
@@ -2483,7 +2819,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     }
 
                     engineData.images.forEach(imgData => {
-                        if (imgData.isDot) {
+                        if (imgData.isDot || (imgData.kind && imgData.kind !== 'image')) {
                             const newDot = {
                                 img: null,
                                 x: imgData.x,
@@ -2494,8 +2830,11 @@ ctx.fillText(conn.number.toString(), midX, midY);
                                 id: imgData.id,
                                 name: imgData.name || '',
                                 fullName: imgData.fullName || '',
-                                isDot: true,
-                                hidden: imgData.hidden || false
+                                isDot: imgData.isDot || false,
+                                kind: imgData.kind || (imgData.isDot ? 'dot' : 'image'),
+                                color: imgData.color, text: imgData.text, font: imgData.font, fontSize: imgData.fontSize,
+                                hidden: imgData.hidden || false,
+                                hiddenLevel: imgData.hiddenLevel || 0
                             };
                             images.push(newDot);
 
@@ -2564,6 +2903,432 @@ ctx.fillText(conn.number.toString(), midX, midY);
 
             e.target.value = '';
         });
+        // ============================================================
+        // ✏️  ANNOTATIONS (lines & text) + 🧭 HIDDEN RADAR
+        // ============================================================
+        function elKind(im) { return im.kind || (im.isDot ? 'dot' : 'image'); }
+
+        function showGrabHint(txt, x, y) {
+            const el = document.getElementById('grabHint');
+            el.textContent = txt;
+            el.style.left = (x + 16) + 'px';
+            el.style.top = (y + 18) + 'px';
+            el.style.display = 'block';
+        }
+        function hideGrabHint() { document.getElementById('grabHint').style.display = 'none'; }
+
+        // Keep every cursor-following overlay from covering the others: stack them vertically
+        function layoutCursorOverlays(cx, cy) {
+            const gap = 6;
+            const order = [
+                document.getElementById('grabHint'),
+                document.getElementById('elementRadarBox'),
+                document.getElementById('hiddenRadar'),
+                document.getElementById('rulerRadarBox')
+            ].filter(el => el && el.style.display !== 'none');
+            if (nameModalHoverMode) order.push(nameModal);
+
+            let total = 0;
+            order.forEach(el => total += el.offsetHeight + gap);
+            let y = cy + 18;
+            if (y + total > window.innerHeight - 8) y = Math.max(8, window.innerHeight - 8 - total);
+
+            order.forEach(el => {
+                const x = Math.max(8, Math.min(cx + 16, window.innerWidth - el.offsetWidth - 8));
+                el.style.transform = 'none';
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                y += el.offsetHeight + gap;
+            });
+        }
+
+        function drawShape(im) {
+            const k = elKind(im);
+            if (k === 'dot') {
+                ctx.fillStyle = '#000000';
+                ctx.beginPath(); ctx.arc(0, 0, im.width / 2, 0, Math.PI * 2); ctx.fill();
+            } else if (k === 'line') {
+                ctx.strokeStyle = im.color || '#111111';
+                ctx.lineWidth = Math.max(0.5, im.height);
+                ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(-im.width / 2, 0); ctx.lineTo(im.width / 2, 0); ctx.stroke();
+            } else if (k === 'text') {
+                ctx.fillStyle = im.color || '#111111';
+                ctx.font = `${im.fontSize || im.height || 24}px ${im.font || 'Arial'}`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(im.text || 'Text', 0, 0);
+            } else {
+                ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(im.img, -im.width / 2, -im.height / 2, im.width, im.height);
+            }
+        }
+
+        function beginTextEntry(worldPos, clientX, clientY) {
+            pendingTextPos = worldPos;
+            const ip = document.getElementById('textEntry');
+            ip.value = '';
+            ip.style.left = clientX + 'px';
+            ip.style.top = clientY + 'px';
+            ip.style.display = 'block';
+            setTimeout(() => ip.focus(), 0);
+        }
+
+        function commitTextEntry() {
+            const ip = document.getElementById('textEntry');
+            if (ip.style.display === 'none') return;
+            const txt = ip.value.trim();
+            ip.style.display = 'none';
+            if (txt && pendingTextPos) {
+                const fnt = document.getElementById('fontSelect').value;
+                const size = 28;
+                const el = { img: null, kind: 'text', text: txt, x: pendingTextPos.x, y: pendingTextPos.y,
+                    width: measureTextWidth(txt, size, fnt), height: size, fontSize: size,
+                    font: fnt, color: document.getElementById('annoColor').value, rotation: 0,
+                    id: Date.now() + Math.random(), name: '', fullName: '', isDot: false, hidden: false, hiddenLevel: 0 };
+                images.push(el); selectedImage = el; saveState(); updateImageCount(); draw();
+            }
+            pendingTextPos = null;
+            if (textMode) toggleTextMode();
+        }
+
+        (function initTextEntry() {
+            const ip = document.getElementById('textEntry');
+            ip.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commitTextEntry(); }
+                else if (e.key === 'Escape') { ip.style.display = 'none'; pendingTextPos = null; if (textMode) toggleTextMode(); }
+                e.stopPropagation();
+            });
+            ip.addEventListener('blur', () => commitTextEntry());
+        })();
+
+        // ===== Background layer =====
+        document.getElementById('bgInput').addEventListener('change', (e) => {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const cx = (canvas.width / 2 - camera.x) / camera.zoom;
+                    const cy = (canvas.height / 2 - camera.y) / camera.zoom;
+                    background = { img, x: cx, y: cy, opacity: parseInt(document.getElementById('bgOpacity').value, 10) / 100, scale: 1 };
+                    draw();
+                };
+                img.src = ev.target.result;
+            };
+            r.readAsDataURL(f);
+            e.target.value = '';
+        });
+
+        function setBgOpacity(v) { if (background) { background.opacity = v / 100; draw(); } }
+
+        function toggleRulerRadar() {
+            rulerRadar = !rulerRadar;
+            const b = document.getElementById('rulerRadarBtn');
+            b.textContent = rulerRadar ? 'Ruler Radar: ON' : 'Ruler Radar: OFF';
+            b.style.background = rulerRadar ? '#E91E63' : '#455A64';
+            if (!rulerRadar) document.getElementById('rulerRadarBox').style.display = 'none';
+        }
+
+        function toggleRulerMouse() {
+            rulerMouseRadar = !rulerMouseRadar;
+            const b = document.getElementById('rulerMouseBtn');
+            b.textContent = rulerMouseRadar ? 'Mouse↔Ruler: ON' : 'Mouse↔Ruler: OFF';
+            b.style.background = rulerMouseRadar ? '#455A64' : '#9e9e9e';
+            if (!rulerMouseRadar) document.getElementById('rulerRadarBox').style.display = 'none';
+        }
+
+        function toggleRulerDiagonal() {
+            rulerDiagonal = !rulerDiagonal;
+            const b = document.getElementById('rulerDiagBtn');
+            b.textContent = rulerDiagonal ? 'Ruler Arrows: 8-way' : 'Ruler Arrows: 4-way';
+            b.style.background = rulerDiagonal ? '#E91E63' : '#455A64';
+        }
+
+        function toggleRulerDims() {
+            rulerDims = !rulerDims;
+            const b = document.getElementById('rulerDimsBtn');
+            b.textContent = rulerDims ? 'Ruler Dims: ON' : 'Ruler Dims: OFF';
+            b.style.background = rulerDims ? '#E91E63' : '#455A64';
+            draw();
+        }
+
+        function updateRulerRadar(cx, cy) {
+            const el = document.getElementById('rulerRadarBox');
+            if (!rulerRadar || !rulerMouseRadar || guides.length === 0) { el.style.display = 'none'; return; }
+            const hs = guides.filter(g => g.axis === 'h').map(g => g.pos * camera.zoom + camera.y).sort((a, b) => a - b);
+            const vs = guides.filter(g => g.axis === 'v').map(g => g.pos * camera.zoom + camera.x).sort((a, b) => a - b);
+            const m = [];
+            if (rulerDiagonal && hs.length && vs.length) {
+                // Point diagonally toward the nearest H∩V crossing, single arrow + straight-line distance
+                let by = hs[0]; for (const y of hs) if (Math.abs(y - cy) < Math.abs(by - cy)) by = y;
+                let bx = vs[0]; for (const x of vs) if (Math.abs(x - cx) < Math.abs(bx - cx)) bx = x;
+                const dx = bx - cx, dy = by - cy;
+                const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+                const idx = ((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8;
+                m.push(arrows[idx] + Math.round(Math.hypot(dx, dy)) + 'px');
+            } else {
+                if (hs.length) { let best = hs[0]; for (const y of hs) if (Math.abs(y - cy) < Math.abs(best - cy)) best = y; m.push((best < cy ? '↑' : '↓') + Math.round(Math.abs(best - cy)) + 'px'); }
+                if (vs.length) { let best = vs[0]; for (const x of vs) if (Math.abs(x - cx) < Math.abs(best - cx)) best = x; m.push((best < cx ? '←' : '→') + Math.round(Math.abs(best - cx)) + 'px'); }
+            }
+            const gaps = [];
+            if (hs.length >= 2) { const g = []; for (let i = 1; i < hs.length; i++) g.push(Math.round(hs[i] - hs[i - 1])); gaps.push('H ' + g.join('·')); }
+            if (vs.length >= 2) { const g = []; for (let i = 1; i < vs.length; i++) g.push(Math.round(vs[i] - vs[i - 1])); gaps.push('V ' + g.join('·')); }
+            el.innerHTML = '⌖ ' + m.join('  ') + (gaps.length ? '<br>↔ ' + gaps.join('   ') : '');
+            el.style.left = (cx + 16) + 'px';
+            el.style.top = (cy + 16) + 'px';
+            el.style.display = 'block';
+        }
+
+        function addGuide(axis) {
+            const cx = (canvas.width / 2 - camera.x) / camera.zoom;
+            const cy = (canvas.height / 2 - camera.y) / camera.zoom;
+            guides.push({ axis, pos: axis === 'h' ? cy : cx, id: Date.now() + Math.random() });
+            draw();
+        }
+
+        function toggleBgMove() {
+            bgMoveMode = !bgMoveMode;
+            const b = document.getElementById('bgMoveBtn');
+            b.style.background = bgMoveMode ? '#F44336' : '#607D8B';
+            b.textContent = bgMoveMode ? 'Moving BG (click to stop)' : 'Move Background';
+            container.style.cursor = bgMoveMode ? 'move' : 'grab';
+        }
+
+        function measureTextWidth(txt, size, font) {
+            ctx.save(); ctx.font = `${size}px ${font}`;
+            const w = ctx.measureText(txt || 'Text').width; ctx.restore();
+            return Math.max(20, w);
+        }
+
+        function toggleLineMode() {
+            lineMode = !lineMode;
+            if (lineMode && textMode) toggleTextMode();
+            const b = document.getElementById('lineBtn');
+            b.style.background = lineMode ? '#F44336' : '#795548';
+            b.textContent = lineMode ? 'Cancel Line' : 'Draw Line';
+            container.style.cursor = lineMode ? 'crosshair' : 'grab';
+        }
+
+        function toggleTextMode() {
+            textMode = !textMode;
+            if (textMode && lineMode) toggleLineMode();
+            const b = document.getElementById('textBtn');
+            b.style.background = textMode ? '#F44336' : '#795548';
+            b.textContent = textMode ? 'Cancel Text' : 'Add Text';
+            container.style.cursor = textMode ? 'text' : 'grab';
+        }
+
+        function toggleRadarEdge() {
+            radarEdge = !radarEdge;
+            const b = document.getElementById('radarEdgeBtn');
+            b.textContent = radarEdge ? 'Radar: Edge' : 'Radar: Center';
+            b.style.background = radarEdge ? '#E91E63' : '#455A64';
+        }
+
+        function setRadarMax(v) {
+            radarMax = parseInt(v, 10);
+            document.getElementById('radarMaxValue').textContent = radarMax;
+        }
+
+        function toggleElemDimElem() {
+            elemDimElem = !elemDimElem;
+            const b = document.getElementById('elemDimElemBtn');
+            b.textContent = elemDimElem ? 'Elem↔Elem: ON' : 'Elem↔Elem: OFF';
+            b.style.background = elemDimElem ? '#E91E63' : '#455A64';
+            draw();
+        }
+
+        function toggleElemDimRuler() {
+            elemDimRuler = !elemDimRuler;
+            const b = document.getElementById('elemDimRulerBtn');
+            b.textContent = elemDimRuler ? 'Elem↔Ruler: ON' : 'Elem↔Ruler: OFF';
+            b.style.background = elemDimRuler ? '#E91E63' : '#455A64';
+            draw();
+        }
+
+        // Half-extent of an element from its center toward a given direction (for edge measuring)
+        function extentAlong(im, dx, dy) {
+            const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+            const c = Math.cos(im.rotation || 0), s = Math.sin(im.rotation || 0);
+            const ex = dx * c + dy * s, ey = -dx * s + dy * c;
+            return 0.5 * ((im.width || 1) * Math.abs(ex) + (im.height || 1) * Math.abs(ey));
+        }
+
+        function toggleDimEdge() {
+            dimEdge = !dimEdge;
+            const b = document.getElementById('dimEdgeBtn');
+            b.textContent = dimEdge ? 'Dim: Edge' : 'Dim: Center';
+            b.style.background = dimEdge ? '#E91E63' : '#455A64';
+            draw();
+        }
+
+        function toggleCenterMode() {
+            centerMode = !centerMode;
+            const b = document.getElementById('centerModeBtn');
+            b.textContent = centerMode ? 'Center Mode: ON (click)' : 'Center Mode: OFF';
+            b.style.background = centerMode ? '#F44336' : '#455A64';
+            container.style.cursor = centerMode ? 'crosshair' : 'grab';
+        }
+
+        function toggleCenterDims() {
+            centerDims = !centerDims;
+            const b = document.getElementById('centerDimsBtn');
+            b.textContent = centerDims ? 'Center Dims: ON' : 'Center Dims: OFF';
+            b.style.background = centerDims ? '#E91E63' : '#455A64';
+            draw();
+        }
+
+        function clearCenter() { centerPoint = null; draw(); }
+
+        // Reusable canvas dimension line (world coords): arrowed line + centered px label
+        function drawDim(ax, ay, bx, by, label, color) {
+            const z = camera.zoom;
+            ctx.setLineDash([]);
+            ctx.strokeStyle = color; ctx.lineWidth = 1.5 / z;
+            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+            const ah = 7 / z, ang = Math.atan2(by - ay, bx - ax);
+            const head = (x, y, a) => { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - ah * Math.cos(a - 0.5), y - ah * Math.sin(a - 0.5)); ctx.lineTo(x - ah * Math.cos(a + 0.5), y - ah * Math.sin(a + 0.5)); ctx.closePath(); ctx.fillStyle = color; ctx.fill(); };
+            head(ax, ay, ang + Math.PI); head(bx, by, ang);
+            const mx = (ax + bx) / 2, my = (ay + by) / 2, w = ctx.measureText(label).width, p = 3 / z, th = 14 / z;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff'; ctx.fillRect(mx - w / 2 - p, my - th / 2 - p, w + p * 2, th + p * 2);
+            ctx.strokeStyle = color; ctx.lineWidth = 1 / z; ctx.strokeRect(mx - w / 2 - p, my - th / 2 - p, w + p * 2, th + p * 2);
+            ctx.fillStyle = color; ctx.fillText(label, mx, my);
+        }
+
+        function toggleElementRadar() {
+            elementRadar = !elementRadar;
+            const b = document.getElementById('elemRadarBtn');
+            b.textContent = elementRadar ? 'Element Radar: ON' : 'Element Radar: OFF';
+            b.style.background = elementRadar ? '#E91E63' : '#455A64';
+            if (!elementRadar) document.getElementById('elementRadarBox').style.display = 'none';
+        }
+
+        function setElementRadarMax(v) {
+            elementRadarMax = parseInt(v, 10);
+            document.getElementById('elemRadarMaxValue').textContent = elementRadarMax;
+        }
+
+        function updateElementRadar(clientX, clientY) {
+            const el = document.getElementById('elementRadarBox');
+            if (!elementRadar) { el.style.display = 'none'; return; }
+            const ones = images;
+            if (ones.length === 0) { el.style.display = 'none'; return; }
+            const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+            const items = ones.map(im => {
+                const sx = im.x * camera.zoom + camera.x;
+                const sy = im.y * camera.zoom + camera.y;
+                const dx = sx - clientX, dy = sy - clientY;
+                const d = Math.round(Math.hypot(dx, dy));
+                const idx = ((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8;
+                return { d, arrow: arrows[idx] };
+            }).sort((a, b) => a.d - b.d).slice(0, elementRadarMax);
+            el.textContent = items.map(i => i.arrow + i.d + 'px').join('   ');
+            el.style.left = (clientX + 16) + 'px';
+            el.style.top = (clientY - 34) + 'px';
+            el.style.display = 'block';
+        }
+
+        function toggleHiddenRadar() {
+            hiddenRadar = !hiddenRadar;
+            const b = document.getElementById('radarBtn');
+            b.textContent = hiddenRadar ? 'Hidden Radar: ON' : 'Hidden Radar: OFF';
+            b.style.background = hiddenRadar ? '#E91E63' : '#455A64';
+            if (!hiddenRadar) document.getElementById('hiddenRadar').style.display = 'none';
+        }
+
+        // Small non-invasive cursor readout: nearest hidden object left/right + px distance
+        function updateHiddenRadar(clientX, clientY) {
+            const el = document.getElementById('hiddenRadar');
+            if (!hiddenRadar) { el.style.display = 'none'; return; }
+            const hiddenOnes = images.filter(im => im.hidden);
+            if (hiddenOnes.length === 0) { el.style.display = 'none'; return; }
+            // One arrow per hidden object, pointing in its true direction (8-way), nearest first
+            const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+            const items = hiddenOnes.map(im => {
+                const sx = im.x * camera.zoom + camera.x;
+                const sy = im.y * camera.zoom + camera.y;
+                const dx = sx - clientX, dy = sy - clientY;
+                let d;
+                if (radarEdge) {
+                    const cos = Math.cos(-im.rotation), sin = Math.sin(-im.rotation);
+                    const ldx = (mouseCanvasX - im.x) * cos - (mouseCanvasY - im.y) * sin;
+                    const ldy = (mouseCanvasX - im.x) * sin + (mouseCanvasY - im.y) * cos;
+                    const qx = Math.max(Math.abs(ldx) - im.width / 2, 0);
+                    const qy = Math.max(Math.abs(ldy) - im.height / 2, 0);
+                    d = Math.round(Math.sqrt(qx * qx + qy * qy) * camera.zoom);
+                } else {
+                    d = Math.round(Math.hypot(dx, dy));
+                }
+                const idx = ((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8;
+                return { d, arrow: arrows[idx] };
+            }).sort((a, b) => a.d - b.d).slice(0, radarMax);
+            el.textContent = items.map(i => i.arrow + i.d + 'px').join('   ');
+            el.style.left = (clientX + 16) + 'px';
+            el.style.top = (clientY - 10) + 'px';
+            el.style.display = 'block';
+        }
+
+        // Font dropdown: curated list + the user's local fonts (asked on first click)
+        (function initFonts() {
+            const sel = document.getElementById('fontSelect');
+            const base = ['Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Courier New', 'Verdana', 'Trebuchet MS', 'Comic Sans MS', 'Impact', 'Tahoma', 'Garamond', 'Palatino Linotype'];
+            const seen = new Set();
+            base.forEach(f => { seen.add(f); const o = document.createElement('option'); o.value = f; o.textContent = f; sel.appendChild(o); });
+            let localLoaded = false;
+            sel.addEventListener('mousedown', () => {
+                if (localLoaded || !window.queryLocalFonts) return;
+                localLoaded = true;
+                window.queryLocalFonts().then(fonts => {
+                    fonts.forEach(f => { if (!seen.has(f.family)) { seen.add(f.family); const o = document.createElement('option'); o.value = f.family; o.textContent = f.family; sel.appendChild(o); } });
+                }).catch(() => {});
+            });
+            sel.addEventListener('change', () => {
+                if (selectedImage && elKind(selectedImage) === 'text') {
+                    selectedImage.font = sel.value;
+                    selectedImage.width = measureTextWidth(selectedImage.text, selectedImage.fontSize, selectedImage.font);
+                    saveState(); draw();
+                }
+            });
+            document.getElementById('annoColor').addEventListener('input', (e) => {
+                if (selectedImage) {
+                    const k = elKind(selectedImage);
+                    if (k === 'line' || k === 'text') { selectedImage.color = e.target.value; saveState(); draw(); }
+                }
+            });
+        })();
+        // Hover tooltips for every control button
+        (function tooltips() {
+            const tips = {
+                uploadBtn: 'Upload an image as a draggable block element',
+                bgMoveBtn: 'Toggle dragging the background image around',
+                connectBtn: 'Connect two elements with a logic line (chains)',
+                simultaneousBtn: 'Click two logic lines to merge into one simultaneous step',
+                fxBtn: 'Pulse + dash logic lines / drawn lines that intersect',
+                hoverBtn: 'Show the Name dialog when hovering an element',
+                hiddenOutlineBtn: 'Cycle hidden element outline: 100% / 50% / off',
+                glowBtn: 'Hidden elements brighten as the mouse nears their center',
+                borderBtn: 'Hidden borders fade in as the mouse nears their edge',
+                lineBtn: 'Draw a straight line (press-drag-release)',
+                textBtn: 'Place text on the canvas',
+                radarBtn: 'Cursor readout: arrows + px to nearest HIDDEN elements',
+                radarEdgeBtn: 'Hidden radar measures from element edge or center',
+                elemRadarBtn: 'Cursor readout: arrows + px to nearest VISIBLE elements',
+                rulerRadarBtn: 'On-ruler spacing + H×V crossing readouts',
+                rulerMouseBtn: 'Toggle the mouse-to-ruler cursor readout',
+                rulerDiagBtn: 'Mouse-to-ruler arrows: 4-way vs 8-way diagonal',
+                rulerDimsBtn: 'Arrowed dimension bars between parallel rulers',
+                elemDimElemBtn: 'Dimension lines: each element to its nearest element',
+                elemDimRulerBtn: 'Dimension lines: each element to its nearest rulers',
+                dimEdgeBtn: '★ Measure dimension lines from element EDGES or CENTERS',
+                centerModeBtn: 'Click the canvas to drop a red center anchor',
+                centerDimsBtn: 'Measure every element + ruler to the center anchor',
+                clearCenterBtn: 'Remove the center anchor (or double-click the dot)',
+                toggleInfoBtn: 'Show / hide the info panel'
+            };
+            Object.keys(tips).forEach(id => { const el = document.getElementById(id); if (el) el.title = tips[id]; });
+            document.querySelectorAll('#controls button').forEach(b => { if (!b.title) b.title = b.textContent.trim(); });
+        })();
     </script>
 </body>
 </html>
