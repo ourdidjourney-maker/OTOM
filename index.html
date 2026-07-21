@@ -338,6 +338,9 @@
         <button id="centerModeBtn" onclick="toggleCenterMode()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Center Mode: OFF</button>
         <button id="centerDimsBtn" onclick="toggleCenterDims()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Center Dims: OFF</button>
         <button id="clearCenterBtn" onclick="clearCenter()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Clear Center</button>
+        <button id="memInfoBtn" onclick="toggleMemInfo()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Mem Info: OFF</button>
+        <button id="pathBtn" onclick="togglePath()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Show Path: OFF</button>
+        <button id="filenameBtn" onclick="toggleFilename()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Filename: OFF</button>
         <button onclick="undo()" style="background: #FFC107;">↶ Undo (Ctrl+Z)</button>
         <button onclick="redo()" style="background: #FFC107;">↷ Redo (Ctrl+Shift+Z)</button>
         <button onclick="zoomIn()">Zoom In (+)</button>
@@ -439,6 +442,13 @@
                   rows="8"
                   style="width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-family: 'Courier New', monospace; resize: vertical;"></textarea>
 
+        <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555;">
+            Source Path (type where this file came from):
+        </label>
+        <input type="text" id="pathInput" placeholder="e.g., C:\MyDocuments\Images\logo.png"
+               title="Browsers can't read the real disk path, so type it here. It saves with the element and shows via the Show Path toggle."
+               style="width: 100%; box-sizing: border-box;">
+
         <div style="margin-top: 15px;">
             <button onclick="saveName()">Save</button>
             <button onclick="closeNameModal()">Cancel</button>
@@ -521,6 +531,9 @@
         let centerMode = false;    // click canvas to place the center anchor
         let centerPoint = null;    // { x, y } user-placed measurement anchor
         let centerDims = false;    // measure everything to the center anchor
+        let showMemInfo = false;   // show file size + type on uploaded images
+        let showPath = false;      // show file name/path on uploaded images
+        let showFilename = false;  // show the raw uploaded filename
         let radarMax = 6; // how many nearest hidden objects the radar shows
         let radarEdge = false; // radar distance from object edge (true) or center (false)
         const LINE_THICKNESS = 3;
@@ -674,7 +687,11 @@
                             id: Date.now(),
                             name: '',        // Display name (short, shown on canvas)
                             fullName: '',    // Full name (detailed, shown in data string)
-                            isDot: false     // NEW: Flag for dot blocks
+                            isDot: false,    // NEW: Flag for dot blocks
+                            fileName: file.name,
+                            fileType: (file.type ? file.type.split('/')[1] : (file.name.split('.').pop() || '')).toUpperCase(),
+                            memSize: file.size,
+                            filePath: file.name
                         };
                         images.push(newImage);
                         updateImageCount();
@@ -1012,6 +1029,7 @@
             nameModal.style.top = '50%';
             nameInput.value = image.name || '';
             fullNameInput.value = image.fullName || '';
+            document.getElementById('pathInput').value = image.sourcePath || image.filePath || '';
             nameModal.style.display = 'block';
             nameInput.focus();
         }
@@ -1028,6 +1046,7 @@
             if (imageToName) {
                 imageToName.name = nameInput.value.trim();
                 imageToName.fullName = fullNameInput.value.trim();
+                imageToName.sourcePath = document.getElementById('pathInput').value.trim();
                 saveState();
                 updateImageList();
                 updateDataString();
@@ -1260,7 +1279,8 @@
                     color: img.color, text: img.text, font: img.font, fontSize: img.fontSize,
                     hidden: img.hidden || false,
                     hiddenLevel: img.hiddenLevel || 0,
-                    imageData: (img.kind && img.kind !== 'image') ? null : (img.isDot ? null : (img.img ? img.img.src : null))
+                    imageData: (img.kind && img.kind !== 'image') ? null : (img.isDot ? null : (img.img ? img.img.src : null)),
+                    sourcePath: img.sourcePath, fileName: img.fileName, fileType: img.fileType, memSize: img.memSize, filePath: img.filePath
                 })),
                 connections: JSON.parse(JSON.stringify(connections)),
                 connectionCounter: connectionCounter
@@ -1345,7 +1365,8 @@
                             isDot: false,
                             kind: 'image',
                             hidden: imgData.hidden || false,
-                            hiddenLevel: imgData.hiddenLevel || 0
+                            hiddenLevel: imgData.hiddenLevel || 0,
+                            sourcePath: imgData.sourcePath, fileName: imgData.fileName, fileType: imgData.fileType, memSize: imgData.memSize, filePath: imgData.filePath
                         });
                         loadedCount++;
                         if (loadedCount === state.images.length) {
@@ -2403,6 +2424,26 @@ ctx.fillText(conn.number.toString(), midX, midY);
 
                 ctx.restore();
 
+                // Memory info + file path readouts on uploaded images (below-left edge, stacked)
+                if ((showMemInfo || showPath || showFilename) && elKind(image) === 'image') {
+                    const z = camera.zoom;
+                    ctx.font = `${11 / z}px Arial`;
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                    ctx.setLineDash([]);
+                    const lx = image.x - image.width / 2;
+                    let ly = image.y + image.height / 2 + 14 / z;
+                    const memTag = (txt, color) => {
+                        const w = ctx.measureText(txt).width, p = 4 / z, th = 13 / z;
+                        ctx.fillStyle = '#fff'; ctx.fillRect(lx - p, ly - th / 2 - p, w + p * 2, th + p * 2);
+                        ctx.strokeStyle = color; ctx.lineWidth = 1 / z; ctx.strokeRect(lx - p, ly - th / 2 - p, w + p * 2, th + p * 2);
+                        ctx.fillStyle = color; ctx.fillText(txt, lx, ly);
+                        ly += th + 6 / z;
+                    };
+                    if (showMemInfo) memTag((image.fileType || 'IMG') + '  ·  ' + formatBytes(image.memSize || 0), '#3F51B5');
+                    if (showFilename) memTag('🖼 ' + (image.fileName || '(unknown)'), '#009688');
+                    if (showPath) memTag('📄 ' + (image.sourcePath || image.filePath || image.fileName || '(no path)'), '#795548');
+                }
+
                 if (image.name) {
                     ctx.font = `${14 / camera.zoom}px Arial`;
                     const textWidth = ctx.measureText(image.name).width;
@@ -2753,7 +2794,8 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     color: img.color, text: img.text, font: img.font, fontSize: img.fontSize,
                     hidden: img.hidden || false,
                     hiddenLevel: img.hiddenLevel || 0,
-                    imageData: (img.kind && img.kind !== 'image') ? null : (img.isDot ? null : (img.img ? img.img.src : null))
+                    imageData: (img.kind && img.kind !== 'image') ? null : (img.isDot ? null : (img.img ? img.img.src : null)),
+                    sourcePath: img.sourcePath, fileName: img.fileName, fileType: img.fileType, memSize: img.memSize, filePath: img.filePath
                 })),
                 connections: connections.map(conn => ({
                     from: conn.from,
@@ -2866,7 +2908,9 @@ ctx.fillText(conn.number.toString(), midX, midY);
                                     name: imgData.name || '',
                                     fullName: imgData.fullName || '',
                                     isDot: false,
-                                    hidden: imgData.hidden || false
+                                    hidden: imgData.hidden || false,
+                                    hiddenLevel: imgData.hiddenLevel || 0,
+                                    sourcePath: imgData.sourcePath, fileName: imgData.fileName, fileType: imgData.fileType, memSize: imgData.memSize, filePath: imgData.filePath
                                 };
                                 images.push(newImage);
 
@@ -3183,6 +3227,37 @@ ctx.fillText(conn.number.toString(), midX, midY);
         }
 
         function clearCenter() { centerPoint = null; draw(); }
+
+        function formatBytes(b) {
+            if (!b) return '0 B';
+            const u = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(b) / Math.log(1024));
+            return (b / Math.pow(1024, i)).toFixed(i ? 1 : 0) + ' ' + u[i];
+        }
+
+        function toggleMemInfo() {
+            showMemInfo = !showMemInfo;
+            const b = document.getElementById('memInfoBtn');
+            b.textContent = showMemInfo ? 'Mem Info: ON' : 'Mem Info: OFF';
+            b.style.background = showMemInfo ? '#E91E63' : '#455A64';
+            draw();
+        }
+
+        function togglePath() {
+            showPath = !showPath;
+            const b = document.getElementById('pathBtn');
+            b.textContent = showPath ? 'Show Path: ON' : 'Show Path: OFF';
+            b.style.background = showPath ? '#E91E63' : '#455A64';
+            draw();
+        }
+
+        function toggleFilename() {
+            showFilename = !showFilename;
+            const b = document.getElementById('filenameBtn');
+            b.textContent = showFilename ? 'Filename: ON' : 'Filename: OFF';
+            b.style.background = showFilename ? '#E91E63' : '#455A64';
+            draw();
+        }
 
         // Reusable canvas dimension line (world coords): arrowed line + centered px label
         function drawDim(ax, ay, bx, by, label, color) {
