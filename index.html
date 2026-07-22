@@ -295,6 +295,9 @@
             overflow-y: auto;
             padding: 10px 12px;
         }
+            .gsep { display:inline-block; width:1px; height:22px; background:#bbb; margin:0 4px 0 8px; vertical-align:middle; }
+        #vpanelContent button, #vpanelContent select, #vpanelContent input[type="range"] { width:100%; box-sizing:border-box; margin:2px 0; float:none !important; }
+        #vpanelContent .gsep { width:100%; height:2px; margin:4px 0; }
     </style>
 </head>
 <body>
@@ -303,6 +306,7 @@
         <button id="uploadBtn" onclick="document.getElementById('fileInput').click()">Upload Coding Block/Element</button>
         <button onclick="document.getElementById('bgInput').click()" style="background: #607D8B;">Upload Background</button>
         <button id="bgMoveBtn" onclick="toggleBgMove()" style="background: #607D8B;">Move Background</button>
+        <button onclick="editBackground()" style="background: #607D8B; font-size: 11px; padding: 6px 8px;" title="Edit the background's name, notations, priority and other data">BG Data</button>
         <button onclick="addGuide('h')" style="background: #2196F3;">+ H Ruler</button>
         <button onclick="addGuide('v')" style="background: #2196F3;">+ V Ruler</button>
         <button id="rulerRadarBtn" onclick="toggleRulerRadar()" style="background: #455A64;">Ruler Radar: OFF</button>
@@ -312,18 +316,19 @@
         <span style="font-size: 11px; color: #333;">BG</span>
         <input type="range" id="bgOpacity" min="0" max="100" value="100" oninput="setBgOpacity(this.value)" style="width: 70px; vertical-align: middle;">
         <input type="file" id="bgInput" accept="image/*" style="display: none;">
-        <button id="connectBtn" onclick="toggleConnectMode()">Connect Block Elements</button>
+        <span class="gsep"></span><button id="connectBtn" onclick="toggleConnectMode()">Connect Block Elements</button>
         <button id="simultaneousBtn" onclick="toggleSimultaneousMode()">Merge Into One Step</button>
-        <button id="fxBtn" onclick="toggleIntersectFX()" style="background: #009688;">Intersect FX: OFF</button>
+        <span class="gsep"></span><button id="fxBtn" onclick="toggleIntersectFX()" style="background: #009688;">Intersect FX: OFF</button>
         <button id="hoverBtn" onclick="toggleHoverPreview()" style="background: #3F51B5;">Hover Info: ON</button>
         <button id="hiddenOutlineBtn" onclick="cycleHiddenOutline()" style="background: #455A64;">Hidden Outline: 100%</button>
         <button id="glowBtn" onclick="toggleProximityGlow()" style="background: #455A64;">Proximity Glow: OFF</button>
         <button id="borderBtn" onclick="toggleProximityBorder()" style="background: #455A64;">Proximity Border: OFF</button>
-        <button id="lineBtn" onclick="toggleLineMode()" style="background: #795548;">Draw Line</button>
+        <span class="gsep"></span><button id="lineBtn" onclick="toggleLineMode()" style="background: #795548;">Draw Line</button>
         <button id="textBtn" onclick="toggleTextMode()" style="background: #795548;">Add Text</button>
+        <button id="rectBtn" onclick="toggleRectMode()" style="background: #795548;">Draw Square</button>
         <input type="color" id="annoColor" value="#111111" title="Line / text color" style="width: 34px; height: 34px; vertical-align: middle; border: none; background: none; cursor: pointer;">
         <select id="fontSelect" title="Font for new text" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-size: 13px;"></select>
-        <button id="radarBtn" onclick="toggleHiddenRadar()" style="background: #455A64;">Hidden Radar: OFF</button>
+        <span class="gsep"></span><button id="radarBtn" onclick="toggleHiddenRadar()" style="background: #455A64;">Hidden Radar: OFF</button>
         <span style="font-size: 11px; color: #333; margin-left: 4px;">Arrows</span>
         <input type="range" id="radarMaxSlider" min="1" max="30" value="6" step="1" oninput="setRadarMax(this.value)" style="width: 80px; vertical-align: middle;">
         <span id="radarMaxValue" style="font-size: 11px; color: #333; width: 18px; display: inline-block;">6</span>
@@ -332,27 +337,39 @@
         <span style="font-size: 11px; color: #333; margin-left: 4px;">Arrows</span>
         <input type="range" id="elemRadarMaxSlider" min="1" max="30" value="6" step="1" oninput="setElementRadarMax(this.value)" style="width: 80px; vertical-align: middle;">
         <span id="elemRadarMaxValue" style="font-size: 11px; color: #333; width: 18px; display: inline-block;">6</span>
-        <button id="elemDimElemBtn" onclick="toggleElemDimElem()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Elem↔Elem: OFF</button>
+        <span class="gsep"></span><button id="elemDimElemBtn" onclick="toggleElemDimElem()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Elem↔Elem: OFF</button>
         <button id="elemDimRulerBtn" onclick="toggleElemDimRuler()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Elem↔Ruler: OFF</button>
         <button id="dimEdgeBtn" onclick="toggleDimEdge()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Dim: Center</button>
         <button id="centerModeBtn" onclick="toggleCenterMode()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Center Mode: OFF</button>
         <button id="centerDimsBtn" onclick="toggleCenterDims()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Center Dims: OFF</button>
         <button id="clearCenterBtn" onclick="clearCenter()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Clear Center</button>
-        <button id="memInfoBtn" onclick="toggleMemInfo()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Mem Info: OFF</button>
+        <span class="gsep"></span><button id="memInfoBtn" onclick="toggleMemInfo()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Mem Info: OFF</button>
         <button id="pathBtn" onclick="togglePath()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Show Path: OFF</button>
         <button id="filenameBtn" onclick="toggleFilename()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Filename: OFF</button>
         <button id="notationsBtn" onclick="toggleNotations()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Notations: OFF</button>
         <button id="agentBtn" onclick="toggleAgent()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Legit Agent: OFF</button>
-        <button onclick="undo()" style="background: #FFC107;">↶ Undo (Ctrl+Z)</button>
+        <button id="memAllocBtn" onclick="toggleMemAlloc()" style="background: #455A64; font-size: 11px; padding: 6px 8px;">Mem Alloc: OFF</button>
+        <span style="font-size:11px; color:#333;">Flag gap</span>
+        <button onclick="adjustFlagGap(-2)" title="Bring flags closer" style="background:#455A64; font-size:11px; padding:6px 9px;">▲</button>
+        <span id="flagGapVal" style="font-size:11px; color:#333; display:inline-block; width:16px; text-align:center;">0</span>
+        <button onclick="adjustFlagGap(2)" title="Push flags apart" style="background:#455A64; font-size:11px; padding:6px 9px;">▼</button>
+        <button id="priLowBtn" onclick="togglePriority('low')" style="background: #455A64; font-size: 11px; padding: 6px 8px;" title="Show/hide Low-priority flags">⚑ Low</button>
+        <button id="priMedBtn" onclick="togglePriority('medium')" style="background: #455A64; font-size: 11px; padding: 6px 8px;" title="Show/hide Medium-priority flags">⚑ Med</button>
+        <button id="priHighBtn" onclick="togglePriority('high')" style="background: #455A64; font-size: 11px; padding: 6px 8px;" title="Show/hide High-priority flags">⚑ High</button>
+        <span class="gsep"></span><button onclick="undo()" style="background: #FFC107;">↶ Undo (Ctrl+Z)</button>
         <button onclick="redo()" style="background: #FFC107;">↷ Redo (Ctrl+Shift+Z)</button>
-        <button onclick="zoomIn()">Zoom In (+)</button>
+        <span class="gsep"></span><button onclick="zoomIn()">Zoom In (+)</button>
         <button onclick="zoomOut()">Zoom Out (-)</button>
         <button onclick="resetView()">Reset View</button>
         <button onclick="toggleFullscreen()" style="background: #FF5722;">⛶ Fullscreen</button>
-        <button onclick="saveEngine()" style="background: #9C27B0;">Save Engine</button>
+        <span class="gsep"></span><button onclick="saveEngine()" style="background: #9C27B0;">Save Engine</button>
         <button onclick="document.getElementById('loadInput').click()" style="background: #00BCD4;">Load Engine</button>
+        <button onclick="openAssetBrowser()" style="background: #673AB7;">🗂 Assets</button>
+        <button id="clockBtn" onclick="toggleClock()" style="background: #263238;">🕘 Clock</button>
+        <button id="perfBtn" onclick="togglePerf()" style="background: #263238;">📊 Perf</button>
         <button onclick="resetEngine()" style="background: #F44336;">🔄 Reset Engine</button>
         <button id="toggleInfoBtn" onclick="toggleInfoSection()" style="float: right; font-size: 16px; padding: 4px 10px; background: #607D8B; margin-top: 5px;" title="Show/Hide Info">▼</button>
+        <button onclick="toggleVerticalUI()" style="float: right; font-size: 16px; padding: 4px 10px; background: #37474F; margin-top: 5px;" title="Collapse into a draggable vertical toolbar">⋮</button>
         <input type="file" id="loadInput" accept=".json" style="display: none;">
 
         <div style="margin-top: 10px; font-size: 12px; color: #333; display: flex; align-items: center; gap: 8px;">
@@ -418,6 +435,71 @@
         <canvas id="canvas"></canvas>
     </div>
 
+    <div id="perfPanel" style="display:none; position:fixed; top:80px; right:24px; width:430px; height:620px; min-width:340px; min-height:240px; z-index:1750; background:#0d1117; color:#c9d1d9; border:1px solid #30363d; border-radius:10px; box-shadow:0 10px 40px rgba(0,0,0,.55); flex-direction:column; overflow:hidden; resize:both; font-family:ui-monospace,Consolas,monospace;">
+        <div id="perfHeader" style="display:flex; align-items:center; gap:8px; padding:10px 12px; background:#161b22; border-bottom:1px solid #30363d; cursor:grab;">
+            <span id="perfGrip" style="font-weight:bold; font-size:12px; color:#58a6ff; flex:1; pointer-events:none;">📊 PERFORMANCE MONITOR</span>
+            <button onclick="flushCache()" title="Free memory" style="margin:0; padding:4px 10px; font-size:10px; background:#8957e5; border-radius:4px;">FLUSH</button>
+            <button onclick="togglePerf()" style="margin:0; padding:4px 9px; font-size:11px; background:#30363d; border-radius:4px;">✕</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; padding:6px 12px; background:#0d1117; border-bottom:1px solid #21262d; font-size:10px; color:#8b949e;">
+            <span>Opacity</span>
+            <input type="range" min="20" max="100" value="100" oninput="setPerfOpacity(this.value)" style="flex:1;">
+        </div>
+        <div id="perfBody" style="flex:1 1 auto; overflow-y:auto; padding:8px 12px; font-size:11px; line-height:1.5;"></div>
+    </div>
+
+    <div id="clockPanel" style="display:none; position:fixed; right:24px; bottom:24px; z-index:1700; user-select:none; flex-direction:column; align-items:center;">
+        <div id="clockDragBar" style="cursor:move; padding:0; margin:0 0 6px; text-align:center; color:#90a4ae; font:11px Arial; letter-spacing:2px;">⋮⋮⋮</div>
+        <svg id="clockSvg" width="230" height="230" viewBox="0 0 200 200" style="display:block; filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));">
+            <defs>
+                <radialGradient id="cFace" cx="38%" cy="30%" r="78%">
+                    <stop offset="0%" stop-color="#3c4a54"/><stop offset="55%" stop-color="#222c33"/><stop offset="100%" stop-color="#12181c"/>
+                </radialGradient>
+                <linearGradient id="cBezel" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#e8eef2"/><stop offset="35%" stop-color="#9aa7b0"/>
+                    <stop offset="50%" stop-color="#6d7a83"/><stop offset="75%" stop-color="#cdd8de"/><stop offset="100%" stop-color="#7d8a93"/>
+                </linearGradient>
+                <linearGradient id="cGlass" x1="0" y1="0" x2="0.7" y2="1">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity=".16"/><stop offset="45%" stop-color="#ffffff" stop-opacity=".03"/>
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="97" fill="url(#cBezel)"/>
+            <circle cx="100" cy="100" r="89" fill="url(#cFace)"/>
+            <circle cx="100" cy="100" r="89" fill="none" stroke="#0a0e11" stroke-width="1.5"/>
+            <g id="cTicks"></g>
+            <g id="cNums"></g>
+            <circle id="swRing" cx="100" cy="62" r="24" fill="#1a2126" stroke="#3d4a52" stroke-width="1"/>
+            <text x="100" y="58" id="swLabel" text-anchor="middle" fill="#78909c" font-family="Arial" font-size="6" letter-spacing="1">STOPWATCH</text>
+            <text x="100" y="70" id="swText" text-anchor="middle" fill="#4FC3F7" font-family="Consolas,monospace" font-size="11" font-weight="bold">00:00.0</text>
+            <text x="100" y="146" id="cDate" text-anchor="middle" fill="#78909c" font-family="Arial" font-size="9" letter-spacing="1"></text>
+            <line id="cHour" x1="100" y1="100" x2="100" y2="58" stroke="#eceff1" stroke-width="6" stroke-linecap="round"/>
+            <line id="cMin" x1="100" y1="100" x2="100" y2="34" stroke="#eceff1" stroke-width="4" stroke-linecap="round"/>
+            <line id="cSec" x1="100" y1="112" x2="100" y2="28" stroke="#ff5252" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="100" cy="100" r="5.5" fill="#cfd8dc"/><circle cx="100" cy="100" r="2.4" fill="#ff5252"/>
+            <circle cx="100" cy="100" r="89" fill="url(#cGlass)" pointer-events="none"/>
+        </svg>
+        <div style="display:flex; gap:5px; margin-top:8px; align-items:center; background:rgba(20,26,30,.92); padding:7px 9px; border-radius:22px; box-shadow:0 6px 18px rgba(0,0,0,.4);">
+            <button onclick="swStartStop()" id="swBtn" style="margin:0; padding:5px 12px; font-size:11px; background:#00897B; border-radius:14px;">Start</button>
+            <button onclick="swReset()" style="margin:0; padding:5px 10px; font-size:11px; background:#455A64; border-radius:14px;">Reset</button>
+            <button onclick="addStamp()" id="stampBtn" title="Timestamp this moment into the Asset Browser" style="margin:0; padding:5px 11px; font-size:11px; background:#7E57C2; border-radius:14px;">Stamp</button>
+            <input type="text" id="stampNote" placeholder="note…" title="Optional note attached to the next stamp" style="width:70px; padding:4px 7px; font-size:11px; border:1px solid #37474F; border-radius:12px; background:#101619; color:#cfd8dc;">
+            <input type="range" min="20" max="100" value="100" oninput="setClockOpacity(this.value)" title="Clock opacity" style="width:74px; margin-left:4px;">
+        </div>
+    </div>
+
+    <div id="vpanel" style="display:none; position:fixed; top:60px; left:20px; width:230px; height:74vh; min-width:170px; min-height:200px; background:white; border-radius:10px; box-shadow:0 6px 28px rgba(0,0,0,0.35); z-index:1600; flex-direction:column; overflow:hidden; resize:both;">
+        <div id="vpanelHeader" style="display:flex; align-items:center; gap:5px; padding:8px 10px; background:#37474F; color:white; cursor:move; user-select:none; border-radius:10px 10px 0 0;">
+            <span style="font-weight:bold; font-size:13px; flex:1;">⋮ Toolbar</span>
+            <button onclick="setVpanelOpacity(1)" style="padding:2px 5px; margin:0; font-size:10px; background:rgba(255,255,255,0.2);">100</button>
+            <button onclick="setVpanelOpacity(0.75)" style="padding:2px 5px; margin:0; font-size:10px; background:rgba(255,255,255,0.2);">75</button>
+            <button onclick="setVpanelOpacity(0.5)" style="padding:2px 5px; margin:0; font-size:10px; background:rgba(255,255,255,0.2);">50</button>
+            <button onclick="setVpanelOpacity(0.25)" style="padding:2px 5px; margin:0; font-size:10px; background:rgba(255,255,255,0.2);">25</button>
+            <button onclick="toggleVerticalUI()" title="Restore top bar" style="padding:2px 7px; margin:0; font-size:13px; background:rgba(255,255,255,0.2);">✕</button>
+        </div>
+        <div id="vpanelContent" style="flex:1 1 auto; overflow-y:auto; padding:8px; display:flex; flex-direction:column; align-items:stretch; gap:2px;"></div>
+    </div>
+
     <div id="hiddenRadar" style="position: fixed; pointer-events: none; z-index: 3000; display: none; font: bold 12px Arial; color: #111; background: rgba(255,255,255,0.92); border: 1px solid #999; border-radius: 6px; padding: 2px 7px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.25);"></div>
 
     <input id="textEntry" type="text" placeholder="type text, Enter to place" style="position: fixed; display: none; z-index: 2500; padding: 6px 8px; border: 2px solid #009688; border-radius: 6px; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
@@ -429,7 +511,7 @@
     <div id="elementRadarBox" style="position: fixed; pointer-events: none; z-index: 3000; display: none; font: bold 12px Arial; color: #1b5e20; background: rgba(232,245,233,0.95); border: 1px solid #4CAF50; border-radius: 6px; padding: 2px 7px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,0.25);"></div>
 
     <div id="nameModal">
-        <h3 style="margin-top: 0;">Name Coding Block/Element:</h3>
+        <h3 id="nameModalHeader" style="margin-top: 0; cursor: move; user-select: none;">⋮⋮ Name Coding Block/Element:</h3>
 
         <label style="display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555;">
             Display Name (shown on canvas):
@@ -463,6 +545,16 @@
         <textarea id="agentInput" rows="2" title="Who/what legitimizes this element. Shown via the Legit Agent toggle."
                   style="width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; resize: vertical;"></textarea>
 
+        <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555;">
+            Priority:
+        </label>
+        <div id="priorityPicker" style="display: flex; align-items: center; gap: 12px;">
+            <span class="pri-dot" data-pri="low" title="Low" style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #bbb; cursor: pointer; box-sizing: border-box;"></span>
+            <span class="pri-dot" data-pri="medium" title="Medium" style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #bbb; cursor: pointer; box-sizing: border-box;"></span>
+            <span class="pri-dot" data-pri="high" title="High" style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #bbb; cursor: pointer; box-sizing: border-box;"></span>
+            <span id="priorityLabel" style="font-weight: bold; color: #555; font-size: 13px;">None</span>
+        </div>
+
         <div style="margin-top: 15px;">
             <button onclick="saveName()">Save</button>
             <button onclick="closeNameModal()">Cancel</button>
@@ -495,6 +587,17 @@
         <div id="dataPanelContent"></div>
     </div>
 
+    <div id="assetPanel" style="display:none; position:fixed; top:120px; left:480px; width:340px; height:470px; min-width:260px; min-height:220px; background:white; border-radius:10px; box-shadow:0 6px 28px rgba(0,0,0,0.28); z-index:1500; flex-direction:column; overflow:hidden; resize:both;">
+        <div id="assetPanelHeader" style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#673AB7; color:white; cursor:move; user-select:none; border-radius:10px 10px 0 0;">
+            <h3 style="margin:0; font-size:15px;">🗂 Asset Browser</h3>
+            <button onclick="closeAssetBrowser()" title="Close" style="background:rgba(255,255,255,0.2); padding:4px 10px; margin:0; font-size:14px;">✕</button>
+        </div>
+        <div id="assetPanelContent" style="flex:1 1 auto; overflow-y:auto; padding:8px 12px 14px; background:#fff;"></div>
+        <div id="assetPanelFooter" style="flex:0 0 auto; border-top:1px solid #e0d7f0; padding:8px 12px; background:#faf7ff; font-size:11px; color:#333; user-select:none;"></div>
+    </div>
+
+    <div id="assetTip" style="position:fixed; pointer-events:none; z-index:4000; display:none; max-width:330px; background:#fff; border:1px solid #d1c4e9; border-radius:10px; box-shadow:0 10px 34px rgba(60,20,120,0.22); padding:10px 12px; font:12px Arial; color:#333;"></div>
+
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -525,7 +628,8 @@
         let mergeFrom = null;
         let imageToName = null;
         // Annotation tools + hidden radar
-        let lineMode = false, textMode = false;
+        let lineMode = false, textMode = false, rectMode = false;
+        let isDrawingRect = false, newRect = null;
         let isDrawingLine = false, newLine = null;
         let pendingTextPos = null;
         let background = null;         // { img, x, y, opacity, scale }
@@ -550,6 +654,12 @@
         let showFilename = false;  // show the raw uploaded filename
         let showNotations = false; // show the Notation(s) field
         let showAgent = false;     // show the Legitimizing Agent field
+        let showMemAlloc = false;  // show memory footprint on ALL elements (hidden too)
+        let modalPriority = '';    // priority selected in the open dialog
+        let priorityShow = { low: false, medium: false, high: false }; // which priorities show flags
+        let dashPhase = 0, priorityLoopRunning = false;
+        const PRIORITY_COLORS = { low: '#4FC3F7', medium: '#F8BBD0', high: '#F44336' };
+        const PRIORITY_LABELS = { '': 'None', low: 'Low', medium: 'Medium', high: 'High' };
         let radarMax = 6; // how many nearest hidden objects the radar shows
         let radarEdge = false; // radar distance from object edge (true) or center (false)
         const LINE_THICKNESS = 3;
@@ -1035,19 +1145,27 @@
             }
         }
 
-        function openNameModal(image) {
+        function openNameModal(image, cx, cy) {
             imageToName = image;
             nameModalHoverMode = false;
             nameModal.style.opacity = '1';
             nameModal.style.pointerEvents = 'auto';
-            nameModal.style.transform = 'translate(-50%, -50%)';
-            nameModal.style.left = '50%';
-            nameModal.style.top = '50%';
+            if (cx !== undefined && cy !== undefined) {
+                nameModal.style.transform = 'none';
+                nameModal.style.left = Math.max(10, Math.min(cx + 12, window.innerWidth - 340)) + 'px';
+                nameModal.style.top = Math.max(10, Math.min(cy + 12, window.innerHeight - 470)) + 'px';
+            } else {
+                nameModal.style.transform = 'translate(-50%, -50%)';
+                nameModal.style.left = '50%';
+                nameModal.style.top = '50%';
+            }
             nameInput.value = image.name || '';
             fullNameInput.value = image.fullName || '';
             document.getElementById('pathInput').value = image.sourcePath || image.filePath || '';
             document.getElementById('notationInput').value = image.notations || '';
             document.getElementById('agentInput').value = image.agent || '';
+            modalPriority = image.priority || '';
+            renderPriorityPicker();
             nameModal.style.display = 'block';
             nameInput.focus();
         }
@@ -1060,6 +1178,38 @@
             imageToName = null;
         }
 
+        function renderPriorityPicker() {
+            document.querySelectorAll('#priorityPicker .pri-dot').forEach(d => {
+                const p = d.getAttribute('data-pri');
+                if (p === modalPriority) { d.style.background = PRIORITY_COLORS[p]; d.style.borderColor = PRIORITY_COLORS[p]; }
+                else { d.style.background = 'transparent'; d.style.borderColor = '#bbb'; }
+            });
+            const lbl = document.getElementById('priorityLabel');
+            if (lbl) lbl.textContent = PRIORITY_LABELS[modalPriority] || 'None';
+        }
+
+        function anyPriorityShown() { return priorityShow.low || priorityShow.medium || priorityShow.high; }
+        function togglePriority(level) {
+            priorityShow[level] = !priorityShow[level];
+            const map = { low: 'priLowBtn', medium: 'priMedBtn', high: 'priHighBtn' };
+            const b = document.getElementById(map[level]);
+            b.style.background = priorityShow[level] ? PRIORITY_COLORS[level] : '#455A64';
+            b.style.color = (priorityShow[level] && level === 'medium') ? '#333' : '#fff';
+            if (anyPriorityShown()) startPriorityLoop(); else draw();
+        }
+        function startPriorityLoop() { if (!priorityLoopRunning) { priorityLoopRunning = true; requestAnimationFrame(priorityLoop); } }
+        function priorityLoop() { if (!anyPriorityShown()) { priorityLoopRunning = false; return; } dashPhase += 0.6; draw(); requestAnimationFrame(priorityLoop); }
+
+        (function initPriorityPicker() {
+            document.querySelectorAll('#priorityPicker .pri-dot').forEach(d => {
+                d.addEventListener('click', () => {
+                    const p = d.getAttribute('data-pri');
+                    modalPriority = (modalPriority === p) ? '' : p;
+                    renderPriorityPicker();
+                });
+            });
+        })();
+
         function saveName() {
             if (imageToName) {
                 imageToName.name = nameInput.value.trim();
@@ -1067,6 +1217,8 @@
                 imageToName.sourcePath = document.getElementById('pathInput').value.trim();
                 imageToName.notations = document.getElementById('notationInput').value.trim();
                 imageToName.agent = document.getElementById('agentInput').value.trim();
+                imageToName.priority = modalPriority;
+                imageToName.lastEdited = Date.now();
                 saveState();
                 updateImageList();
                 updateDataString();
@@ -1296,11 +1448,11 @@
                     rotation: img.rotation,
                     isDot: img.isDot || false,
                     kind: img.kind || (img.isDot ? 'dot' : 'image'),
-                    color: img.color, text: img.text, font: img.font, fontSize: img.fontSize,
+                    color: img.color, thickness: img.thickness, text: img.text, font: img.font, fontSize: img.fontSize,
                     hidden: img.hidden || false,
                     hiddenLevel: img.hiddenLevel || 0,
                     imageData: (img.kind && img.kind !== 'image') ? null : (img.isDot ? null : (img.img ? img.img.src : null)),
-                    sourcePath: img.sourcePath, fileName: img.fileName, fileType: img.fileType, memSize: img.memSize, filePath: img.filePath, notations: img.notations, agent: img.agent
+                    sourcePath: img.sourcePath, fileName: img.fileName, fileType: img.fileType, memSize: img.memSize, filePath: img.filePath, notations: img.notations, agent: img.agent, priority: img.priority, lastEdited: img.lastEdited
                 })),
                 connections: JSON.parse(JSON.stringify(connections)),
                 connectionCounter: connectionCounter
@@ -1358,7 +1510,7 @@
                         rotation: imgData.rotation,
                         isDot: imgData.isDot || false,
                         kind: imgData.kind || (imgData.isDot ? 'dot' : 'image'),
-                        color: imgData.color, text: imgData.text, font: imgData.font, fontSize: imgData.fontSize,
+                        color: imgData.color, thickness: imgData.thickness, text: imgData.text, font: imgData.font, fontSize: imgData.fontSize,
                         hidden: imgData.hidden || false,
                         hiddenLevel: imgData.hiddenLevel || 0
                     });
@@ -1386,7 +1538,7 @@
                             kind: 'image',
                             hidden: imgData.hidden || false,
                             hiddenLevel: imgData.hiddenLevel || 0,
-                            sourcePath: imgData.sourcePath, fileName: imgData.fileName, fileType: imgData.fileType, memSize: imgData.memSize, filePath: imgData.filePath, notations: imgData.notations, agent: imgData.agent
+                            sourcePath: imgData.sourcePath, fileName: imgData.fileName, fileType: imgData.fileType, memSize: imgData.memSize, filePath: imgData.filePath, notations: imgData.notations, agent: imgData.agent, priority: imgData.priority, lastEdited: imgData.lastEdited
                         });
                         loadedCount++;
                         if (loadedCount === state.images.length) {
@@ -1506,6 +1658,12 @@
             if (centerMode) {
                 centerPoint = { x: pos.x, y: pos.y };
                 draw();
+                return;
+            }
+            // Square tool: press-drag-release
+            if (rectMode) {
+                isDrawingRect = true;
+                newRect = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
                 return;
             }
             // Background drag mode
@@ -1676,6 +1834,11 @@
                 scheduleDraw();
                 return;
             }
+            if (isDrawingRect && newRect) {
+                newRect.x2 = pos.x; newRect.y2 = pos.y;
+                scheduleDraw();
+                return;
+            }
             if (bgDragging && background) {
                 background.x = pos.x - dragStart.x;
                 background.y = pos.y - dragStart.y;
@@ -1832,6 +1995,21 @@
 
         // Mouse up event
         canvas.addEventListener('mouseup', (e) => {
+            // Finalize a drawn square/rectangle
+            if (isDrawingRect && newRect) {
+                isDrawingRect = false;
+                const { x1, y1, x2, y2 } = newRect; newRect = null;
+                const w = Math.abs(x2 - x1), h = Math.abs(y2 - y1);
+                if (w > 4 && h > 4) {
+                    const el = { img: null, kind: 'rect', x: (x1 + x2) / 2, y: (y1 + y2) / 2,
+                        width: w, height: h, rotation: 0, thickness: LINE_THICKNESS,
+                        color: document.getElementById('annoColor').value,
+                        id: Date.now() + Math.random(), name: '', fullName: '', isDot: false, hidden: false, hiddenLevel: 0 };
+                    images.push(el); selectedImage = el; saveState(); updateImageCount();
+                }
+                draw();
+                return;
+            }
             if (bgDragging) { bgDragging = false; return; }
             if (draggingGuide) { draggingGuide = null; return; }
             // Finalize a drawn line
@@ -1925,7 +2103,7 @@
             const clickedImage = getImageAtPoint(pos.x, pos.y);
 
             if (clickedImage && !connectMode) {
-                openNameModal(clickedImage);
+                openNameModal(clickedImage, e.clientX, e.clientY);
             }
             else if (!clickedImage && !connectMode && !simultaneousMode) {
                 const newDot = {
@@ -2064,6 +2242,7 @@
             ctx.setTransform(camera.zoom, 0, 0, camera.zoom, camera.x, camera.y);
 
             const imageMap = new Map(images.map(img => [img.id, img]));
+            resetFlagRects();
 
             // ========================================
             // 🚀 PERFORMANCE FIX: VISIBLE GRID ONLY
@@ -2078,6 +2257,7 @@
             const visibleBottom = (canvas.height - camera.y) / camera.zoom;
 
             const gridSize = 100;
+            setView(visibleLeft, visibleTop, visibleRight, visibleBottom, 250 / camera.zoom);
             const startX = Math.floor(visibleLeft / gridSize) * gridSize;
             const endX = Math.ceil(visibleRight / gridSize) * gridSize;
             const startY = Math.floor(visibleTop / gridSize) * gridSize;
@@ -2127,31 +2307,54 @@
                     const a = imageMap.get(c.from), b = imageMap.get(c.to);
                     if (!a || !b) return;
                     const mx = (c.circleX ?? (a.x + b.x) / 2), my = (c.circleY ?? (a.y + b.y) / 2);
+                    if (!segInView(a.x, a.y, b.x, b.y)) return;
                     entries.push({ ref: c, segs: [[a.x, a.y, mx, my], [mx, my, b.x, b.y]] });
                 });
                 images.forEach(im => {
-                    if (im.kind === 'line' && !im.hidden) {
+                    if (im.kind === 'line' && !im.hidden && inView(im)) {
                         const cc = Math.cos(im.rotation), ss = Math.sin(im.rotation), hw = im.width / 2;
                         entries.push({ ref: im, segs: [[im.x - cc * hw, im.y - ss * hw, im.x + cc * hw, im.y + ss * hw]] });
                     }
                 });
-                for (let a = 0; a < entries.length; a++) {
-                    for (let b = a + 1; b < entries.length; b++) {
-                        let hit = false;
-                        for (const A of entries[a].segs) {
-                            for (const B of entries[b].segs) {
-                                if (strictCross(A[0], A[1], A[2], A[3], B[0], B[1], B[2], B[3])) hit = true;
-                            }
+                // Spatial grid: only test segment pairs that share a cell
+                const CELL = 256;
+                const buckets = new Map();
+                entries.forEach((e, idx) => {
+                    e.segs.forEach(s => {
+                        const x0 = Math.floor(Math.min(s[0], s[2]) / CELL), x1 = Math.floor(Math.max(s[0], s[2]) / CELL);
+                        const y0 = Math.floor(Math.min(s[1], s[3]) / CELL), y1 = Math.floor(Math.max(s[1], s[3]) / CELL);
+                        for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) {
+                            const k = cx + ':' + cy;
+                            let b = buckets.get(k); if (!b) { b = new Set(); buckets.set(k, b); }
+                            b.add(idx);
                         }
-                        if (hit) { intersectingSet.add(entries[a].ref); intersectingSet.add(entries[b].ref); }
+                    });
+                });
+                const tested = new Set();
+                buckets.forEach(bucket => {
+                    const list = [...bucket];
+                    for (let a = 0; a < list.length; a++) {
+                        for (let b = a + 1; b < list.length; b++) {
+                            const pk = list[a] + '_' + list[b];
+                            if (tested.has(pk)) continue;
+                            tested.add(pk);
+                            let hit = false;
+                            for (const A of entries[list[a]].segs) {
+                                for (const B of entries[list[b]].segs) {
+                                    if (strictCross(A[0], A[1], A[2], A[3], B[0], B[1], B[2], B[3])) hit = true;
+                                }
+                            }
+                            if (hit) { intersectingSet.add(entries[list[a]].ref); intersectingSet.add(entries[list[b]].ref); }
+                        }
                     }
-                }
+                });
             }
 
             connections.forEach(conn => {
                 const fromImg = imageMap.get(conn.from);
                 const toImg = imageMap.get(conn.to);
                 if (fromImg && toImg) {
+                    if (!segInView(fromImg.x, fromImg.y, toImg.x, toImg.y)) return;
                     // Hidden logic line: faded grey dashed ghost, skip normal drawing
                     if (conn.hidden) {
                         const hmx = (conn.circleX ?? (fromImg.x + toImg.x) / 2);
@@ -2321,6 +2524,9 @@ ctx.fillText(conn.number.toString(), midX, midY);
             };
 
             images.forEach(image => {
+                // Viewport cull: nothing off-screen costs draw or collision work
+                if (!inView(image, 80)) return;
+
                 // Hidden element: faded ghost with grey dashed outline, skip normal drawing
                 if (image.hidden) {
                     // Base opacity from the eye-cycle level (70% / 15% / off)
@@ -2444,23 +2650,33 @@ ctx.fillText(conn.number.toString(), midX, midY);
 
                 ctx.restore();
 
-                // Memory info + file path readouts on uploaded images (below-left edge, stacked)
-                if ((showMemInfo || showPath || showFilename || showNotations || showAgent) && elKind(image) === 'image') {
+                // Metadata readouts (below-left edge, stacked) — works for any element type
+                if ((showMemInfo || showPath || showFilename || showNotations || showAgent) && inView(image, 60)) {
                     const z = camera.zoom;
-                    ctx.font = `${11 / z}px Arial`;
+                    ctx.font = `${15 / z}px Arial`;
                     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
                     ctx.setLineDash([]);
-                    const lx = image.x - image.width / 2;
-                    let ly = image.y + image.height / 2 + 14 / z;
+                    const isImg = elKind(image) === 'image';
+                    const lx = isImg ? (image.x - image.width / 2) : (image.x - 40 / z);
+                    let ly = image.y + Math.max(image.height / 2, 12 / z) + 4 / z;
+                    let stackStarted = false;
                     const memTag = (txt, color) => {
-                        const w = ctx.measureText(txt).width, p = 4 / z, th = 13 / z;
-                        ctx.fillStyle = '#fff'; ctx.fillRect(lx - p, ly - th / 2 - p, w + p * 2, th + p * 2);
-                        ctx.strokeStyle = color; ctx.lineWidth = 1 / z; ctx.strokeRect(lx - p, ly - th / 2 - p, w + p * 2, th + p * 2);
-                        ctx.fillStyle = color; ctx.fillText(txt, lx, ly);
-                        ly += th + 6 / z;
+                        const w = ctx.measureText(txt).width, p = 4 / z, th = 16 / z;
+                        const boxH = th + p * 2, step = boxH + flagGap / z;
+                        // Only the FIRST flag searches for clear space (vs other elements).
+                        // The rest stack sequentially — self-collision would fight negative gaps.
+                        let top;
+                        if (!stackStarted) { top = findFreeSlot(lx - p, ly, w + p * 2, boxH, boxH); stackStarted = true; }
+                        else { top = ly; }
+                        claimRect(lx - p, top, w + p * 2, boxH);
+                        ctx.fillStyle = '#fff'; ctx.fillRect(lx - p, top, w + p * 2, boxH);
+                        ctx.strokeStyle = color; ctx.lineWidth = 1 / z; ctx.strokeRect(lx - p, top, w + p * 2, boxH);
+                        ctx.fillStyle = color; ctx.fillText(txt, lx, top + boxH / 2);
+                        ly = top + step;
                     };
-                    if (showMemInfo) memTag((image.fileType || 'IMG') + '  ·  ' + formatBytes(image.memSize || 0), '#3F51B5');
-                    if (showFilename) memTag('🖼 ' + (image.fileName || '(unknown)'), '#009688');
+                    const typeLabel = isImg ? (image.fileType || 'IMG') : elKind(image).toUpperCase();
+                    if (showMemInfo) memTag(typeLabel + '  ·  ' + formatBytes(elementBytes(image)), '#3F51B5');
+                    if (showFilename && image.fileName) memTag('🖼 ' + image.fileName, '#009688');
                     if (showPath) memTag('📄 ' + (image.sourcePath || image.filePath || image.fileName || '(no path)'), '#795548');
                     if (showNotations) memTag('✎ ' + (image.notations || '(none)'), '#C2185B');
                     if (showAgent) memTag('⚖ La= ' + (image.agent || '(none)'), '#00838F');
@@ -2531,6 +2747,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
 
                         for (const otherImage of images) {
                             if (otherImage === image) continue;
+                            if (!inView(otherImage, 40)) continue;
 
                             const imgLeft = otherImage.x - otherImage.width / 2;
                             const imgRight = otherImage.x + otherImage.width / 2;
@@ -2549,6 +2766,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
                             const fromImg = imageMap.get(conn.from);
                             const toImg = imageMap.get(conn.to);
                             if (!fromImg || !toImg) continue;
+                            if (!segInView(fromImg.x, fromImg.y, toImg.x, toImg.y)) continue;
 
                             if (lineIntersectsRect(
                                 fromImg.x, fromImg.y, toImg.x, toImg.y,
@@ -2589,6 +2807,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     ctx.lineWidth = 1.5 / camera.zoom;
                     ctx.fillRect(boxX, boxY, textWidth + padding * 2, textHeight + padding * 2);
                     ctx.strokeRect(boxX, boxY, textWidth + padding * 2, textHeight + padding * 2);
+                    claimRect(boxX, boxY, textWidth + padding * 2, textHeight + padding * 2);
 
                     ctx.fillStyle = '#333';
                     ctx.textAlign = textAlign;
@@ -2596,6 +2815,17 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     ctx.fillText(image.name, labelX, labelY);
                 }
             });
+
+            // Preview of the square currently being drawn
+            if (isDrawingRect && newRect) {
+                ctx.save();
+                ctx.strokeStyle = document.getElementById('annoColor').value;
+                ctx.lineWidth = Math.max(0.5, LINE_THICKNESS);
+                ctx.setLineDash([6 / camera.zoom, 4 / camera.zoom]);
+                ctx.strokeRect(Math.min(newRect.x1, newRect.x2), Math.min(newRect.y1, newRect.y2),
+                               Math.abs(newRect.x2 - newRect.x1), Math.abs(newRect.y2 - newRect.y1));
+                ctx.restore();
+            }
 
             // Preview of the line currently being drawn
             if (isDrawingLine && newLine) {
@@ -2615,7 +2845,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
             if (elemDimElem || elemDimRuler || (centerDims && centerPoint) || centerPoint) {
                 const z = camera.zoom;
                 ctx.font = `bold ${11 / z}px Arial`;
-                const vis = images; // measure hidden elements too (they still have positions)
+                const vis = images.filter(im => inView(im, 100));
                 const vg = guides.filter(g => g.axis === 'v').map(g => g.pos);
                 const hg = guides.filter(g => g.axis === 'h').map(g => g.pos);
 
@@ -2639,10 +2869,30 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 }
 
                 if (elemDimElem && vis.length >= 2) {
+                    // Spatial grid nearest-neighbour: search own cell + ring, widening only if empty
+                    const CELL = 400;
+                    const grid = new Map();
+                    vis.forEach((im, i) => {
+                        const k = Math.floor(im.x / CELL) + ':' + Math.floor(im.y / CELL);
+                        let b = grid.get(k); if (!b) { b = []; grid.set(k, b); }
+                        b.push(i);
+                    });
                     const drawn = new Set();
                     vis.forEach((im, i) => {
+                        const gx = Math.floor(im.x / CELL), gy = Math.floor(im.y / CELL);
                         let best = -1, bd = Infinity;
-                        vis.forEach((o, j) => { if (j === i) return; const d = Math.hypot(o.x - im.x, o.y - im.y); if (d < bd) { bd = d; best = j; } });
+                        for (let ring = 1; ring <= 4 && best < 0; ring++) {
+                            for (let cx = gx - ring; cx <= gx + ring; cx++) {
+                                for (let cy = gy - ring; cy <= gy + ring; cy++) {
+                                    const b = grid.get(cx + ':' + cy); if (!b) continue;
+                                    for (const j of b) {
+                                        if (j === i) continue;
+                                        const d = Math.hypot(vis[j].x - im.x, vis[j].y - im.y);
+                                        if (d < bd) { bd = d; best = j; }
+                                    }
+                                }
+                            }
+                        }
                         if (best >= 0) {
                             const key = i < best ? i + '-' + best : best + '-' + i;
                             if (!drawn.has(key)) {
@@ -2760,6 +3010,78 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 ctx.restore();
             }
 
+            // Priority flags: vertical marching-ants flag, auto-placed to avoid overlap
+            if (anyPriorityShown()) {
+                const z = camera.zoom;
+                images.forEach(im => {
+                    if (!im.priority || !priorityShow[im.priority]) return;
+                    if (!inView(im, 60)) return;
+                    const color = PRIORITY_COLORS[im.priority];
+                    const label = PRIORITY_LABELS[im.priority];
+                    const fs = 16 / z;
+                    ctx.font = `bold ${fs}px Arial`;
+                    const tw = ctx.measureText(label).width;
+                    const padX = 7 / z, padY = 8 / z;
+                    const boxW = fs + padX * 2, boxH = tw + padY * 2;
+                    const gap = 12 / z;
+                    // Candidate spots around the element: right, left, top, bottom, then diagonals
+                    const cands = [
+                        [im.x + im.width / 2 + gap, im.y - boxH / 2],
+                        [im.x - im.width / 2 - gap - boxW, im.y - boxH / 2],
+                        [im.x - boxW / 2, im.y - im.height / 2 - gap - boxH],
+                        [im.x - boxW / 2, im.y + im.height / 2 + gap],
+                        [im.x + im.width / 2 + gap, im.y + im.height / 2 + gap],
+                        [im.x - im.width / 2 - gap - boxW, im.y + im.height / 2 + gap],
+                        [im.x + im.width / 2 + gap, im.y - im.height / 2 - gap - boxH],
+                        [im.x - im.width / 2 - gap - boxW, im.y - im.height / 2 - gap - boxH]
+                    ];
+                    let fx = cands[0][0], fy = cands[0][1];
+                    for (const [cx2, cy2] of cands) {
+                        if (!rectOccupied(cx2, cy2, boxW, boxH)) { fx = cx2; fy = cy2; break; }
+                    }
+                    claimRect(fx, fy, boxW, boxH);
+                    ctx.save();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(fx, fy, boxW, boxH);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2 / z;
+                    ctx.setLineDash([6 / z, 4 / z]);
+                    ctx.lineDashOffset = -dashPhase / z;
+                    ctx.strokeRect(fx, fy, boxW, boxH);
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = color;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.translate(fx + boxW / 2, fy + boxH / 2);
+                    ctx.rotate(-Math.PI / 2);
+                    ctx.fillText(label, 0, 0);
+                    ctx.restore();
+                });
+            }
+
+            // Memory allocation tag on EVERY element (hidden or not), above the element
+            if (showMemAlloc) {
+                const z = camera.zoom;
+                ctx.font = `bold ${15 / z}px Arial`;
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.setLineDash([]);
+                images.forEach(im => {
+                    if (!inView(im, 40)) return;
+                    const isImg = elKind(im) === 'image';
+                    const lx = isImg ? (im.x - im.width / 2) : (im.x - 40 / z);
+                    const ly = im.y - Math.max(im.height / 2, 12 / z) - 12 / z;
+                    const txt = '💾 ' + formatBytes(elementBytes(im)) + (im.hidden ? ' · hidden' : '');
+                    const w = ctx.measureText(txt).width, p = 4 / z, th = 16 / z;
+                    const boxH = th + p * 2, step = boxH + flagGap / z;
+                    let ty = ly - boxH;
+                    for (let i = 0; i < 40 && rectOccupied(lx - p, ty, w + p * 2, boxH); i++) ty -= step;
+                    claimRect(lx - p, ty, w + p * 2, boxH);
+                    const cy2 = ty + boxH / 2;
+                    ctx.fillStyle = '#fff'; ctx.fillRect(lx - p, ty, w + p * 2, boxH);
+                    ctx.strokeStyle = '#6A1B9A'; ctx.lineWidth = 1 / z; ctx.strokeRect(lx - p, ty, w + p * 2, boxH);
+                    ctx.fillStyle = '#6A1B9A'; ctx.fillText(txt, lx, cy2);
+                });
+            }
+
             // Draw ghost image while duplicating
             if (isDuplicating && duplicateSource && dragStart.ghostX !== undefined) {
                 ctx.save();
@@ -2813,11 +3135,11 @@ ctx.fillText(conn.number.toString(), midX, midY);
                     rotation: img.rotation,
                     isDot: img.isDot || false,
                     kind: img.kind || (img.isDot ? 'dot' : 'image'),
-                    color: img.color, text: img.text, font: img.font, fontSize: img.fontSize,
+                    color: img.color, thickness: img.thickness, text: img.text, font: img.font, fontSize: img.fontSize,
                     hidden: img.hidden || false,
                     hiddenLevel: img.hiddenLevel || 0,
                     imageData: (img.kind && img.kind !== 'image') ? null : (img.isDot ? null : (img.img ? img.img.src : null)),
-                    sourcePath: img.sourcePath, fileName: img.fileName, fileType: img.fileType, memSize: img.memSize, filePath: img.filePath, notations: img.notations, agent: img.agent
+                    sourcePath: img.sourcePath, fileName: img.fileName, fileType: img.fileType, memSize: img.memSize, filePath: img.filePath, notations: img.notations, agent: img.agent, priority: img.priority, lastEdited: img.lastEdited
                 })),
                 connections: connections.map(conn => ({
                     from: conn.from,
@@ -2900,7 +3222,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
                                 fullName: imgData.fullName || '',
                                 isDot: imgData.isDot || false,
                                 kind: imgData.kind || (imgData.isDot ? 'dot' : 'image'),
-                                color: imgData.color, text: imgData.text, font: imgData.font, fontSize: imgData.fontSize,
+                                color: imgData.color, thickness: imgData.thickness, text: imgData.text, font: imgData.font, fontSize: imgData.fontSize,
                                 hidden: imgData.hidden || false,
                                 hiddenLevel: imgData.hiddenLevel || 0
                             };
@@ -2932,7 +3254,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
                                     isDot: false,
                                     hidden: imgData.hidden || false,
                                     hiddenLevel: imgData.hiddenLevel || 0,
-                                    sourcePath: imgData.sourcePath, fileName: imgData.fileName, fileType: imgData.fileType, memSize: imgData.memSize, filePath: imgData.filePath, notations: imgData.notations, agent: imgData.agent
+                                    sourcePath: imgData.sourcePath, fileName: imgData.fileName, fileType: imgData.fileType, memSize: imgData.memSize, filePath: imgData.filePath, notations: imgData.notations, agent: imgData.agent, priority: imgData.priority, lastEdited: imgData.lastEdited
                                 };
                                 images.push(newImage);
 
@@ -3022,6 +3344,10 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 ctx.lineWidth = Math.max(0.5, im.height);
                 ctx.lineCap = 'round';
                 ctx.beginPath(); ctx.moveTo(-im.width / 2, 0); ctx.lineTo(im.width / 2, 0); ctx.stroke();
+            } else if (k === 'rect') {
+                ctx.strokeStyle = im.color || '#111111';
+                ctx.lineWidth = Math.max(0.5, im.thickness || 3);
+                ctx.strokeRect(-im.width / 2, -im.height / 2, im.width, im.height);
             } else if (k === 'text') {
                 ctx.fillStyle = im.color || '#111111';
                 ctx.font = `${im.fontSize || im.height || 24}px ${im.font || 'Arial'}`;
@@ -3080,7 +3406,10 @@ ctx.fillText(conn.number.toString(), midX, midY);
                 img.onload = () => {
                     const cx = (canvas.width / 2 - camera.x) / camera.zoom;
                     const cy = (canvas.height / 2 - camera.y) / camera.zoom;
-                    background = { img, x: cx, y: cy, opacity: parseInt(document.getElementById('bgOpacity').value, 10) / 100, scale: 1 };
+                    background = { img, x: cx, y: cy, opacity: parseInt(document.getElementById('bgOpacity').value, 10) / 100, scale: 1,
+                        kind: 'background', name: '', fullName: '', notations: '', agent: '', priority: '', sourcePath: '',
+                        fileName: f.name, fileType: (f.type ? f.type.split('/')[1] : (f.name.split('.').pop() || '')).toUpperCase(),
+                        memSize: f.size, width: img.width, height: img.height };
                     draw();
                 };
                 img.src = ev.target.result;
@@ -3090,6 +3419,11 @@ ctx.fillText(conn.number.toString(), midX, midY);
         });
 
         function setBgOpacity(v) { if (background) { background.opacity = v / 100; draw(); } }
+
+        function editBackground() {
+            if (!background) { alert('No background loaded yet.'); return; }
+            openNameModal(background);
+        }
 
         function toggleRulerRadar() {
             rulerRadar = !rulerRadar;
@@ -3179,6 +3513,15 @@ ctx.fillText(conn.number.toString(), midX, midY);
             container.style.cursor = lineMode ? 'crosshair' : 'grab';
         }
 
+        function toggleRectMode() {
+            rectMode = !rectMode;
+            if (rectMode) { if (lineMode) toggleLineMode(); if (textMode) toggleTextMode(); }
+            const b = document.getElementById('rectBtn');
+            b.style.background = rectMode ? '#F44336' : '#795548';
+            b.textContent = rectMode ? 'Cancel Square' : 'Draw Square';
+            container.style.cursor = rectMode ? 'crosshair' : 'grab';
+        }
+
         function toggleTextMode() {
             textMode = !textMode;
             if (textMode && lineMode) toggleLineMode();
@@ -3257,6 +3600,80 @@ ctx.fillText(conn.number.toString(), midX, midY);
             return (b / Math.pow(1024, i)).toFixed(i ? 1 : 0) + ' ' + u[i];
         }
 
+        // Estimated in-memory byte footprint of any object (skips the raw Image element)
+        function objBytes(obj, skip) {
+            const clone = {};
+            for (const k in obj) { if (k === skip) continue; const v = obj[k]; if (typeof v === 'function') continue; clone[k] = v; }
+            try { return new Blob([JSON.stringify(clone)]).size; } catch (e) { return (JSON.stringify(clone) || '').length; }
+        }
+        // Element footprint = file bytes (images) + its data/metadata bytes
+        function elementBytes(im) { return (im.memSize || 0) + objBytes(im, 'img'); }
+
+        // ---- Viewport culling: skip work for anything off-screen ----
+        var VIEW = { l: -1e9, t: -1e9, r: 1e9, b: 1e9 };
+        function setView(l, t, r, b, pad) { VIEW = { l: l - pad, t: t - pad, r: r + pad, b: b + pad }; }
+        function inView(im, extra) {
+            const e = extra || 0;
+            const hw = (im.width || 0) / 2 + e, hh = (im.height || 0) / 2 + e;
+            return !(im.x + hw < VIEW.l || im.x - hw > VIEW.r || im.y + hh < VIEW.t || im.y - hh > VIEW.b);
+        }
+        function segInView(x1, y1, x2, y2) {
+            return !(Math.max(x1, x2) < VIEW.l || Math.min(x1, x2) > VIEW.r ||
+                     Math.max(y1, y2) < VIEW.t || Math.min(y1, y2) > VIEW.b);
+        }
+
+        // ---- Flag collision system: every on-canvas flag claims its rect so none overlap ----
+        // ---- Flag collision: SPATIAL HASH GRID (O(1) neighbor lookup, not O(n) scan) ----
+        var flagRects = [];
+        var flagGap = 0;   // user-adjustable extra pixels between stacked flags
+        var flagGrid = new Map();
+        var FLAG_CELL = 128;            // world units per bucket
+        function resetFlagRects() { flagRects = []; flagGrid = new Map(); }
+        function _cells(x, y, w, h) {
+            const c = FLAG_CELL;
+            const x0 = Math.floor(x / c), x1 = Math.floor((x + w) / c);
+            const y0 = Math.floor(y / c), y1 = Math.floor((y + h) / c);
+            return { x0, x1, y0, y1 };
+        }
+        function rectOccupied(x, y, w, h) {
+            if (!flagGrid) return false;
+            const { x0, x1, y0, y1 } = _cells(x, y, w, h);
+            for (let cx = x0; cx <= x1; cx++) {
+                for (let cy = y0; cy <= y1; cy++) {
+                    const bucket = flagGrid.get(cx + ':' + cy);
+                    if (!bucket) continue;
+                    for (let i = 0; i < bucket.length; i++) {
+                        const r = bucket[i];
+                        if (!(x + w < r.x || x > r.x + r.w || y + h < r.y || y > r.y + r.h)) return true;
+                    }
+                }
+            }
+            return false;
+        }
+        function claimRect(x, y, w, h) {
+            if (!flagGrid) resetFlagRects();
+            const r = { x, y, w, h };
+            flagRects.push(r);
+            const { x0, x1, y0, y1 } = _cells(x, y, w, h);
+            for (let cx = x0; cx <= x1; cx++) {
+                for (let cy = y0; cy <= y1; cy++) {
+                    const k = cx + ':' + cy;
+                    let b = flagGrid.get(k);
+                    if (!b) { b = []; flagGrid.set(k, b); }
+                    b.push(r);
+                }
+            }
+        }
+        // Find a free slot by stepping downward from a starting point
+        function findFreeSlot(x, y, w, h, stepY) {
+            let ty = y;
+            for (let i = 0; i < 40; i++) {
+                if (!rectOccupied(x, ty, w, h)) break;
+                ty += stepY;
+            }
+            return ty;
+        }
+
         function toggleMemInfo() {
             showMemInfo = !showMemInfo;
             const b = document.getElementById('memInfoBtn');
@@ -3294,6 +3711,20 @@ ctx.fillText(conn.number.toString(), midX, midY);
             const b = document.getElementById('agentBtn');
             b.textContent = showAgent ? 'Legit Agent: ON' : 'Legit Agent: OFF';
             b.style.background = showAgent ? '#E91E63' : '#455A64';
+            draw();
+        }
+
+        function adjustFlagGap(d) {
+            flagGap = Math.max(-22, Math.min(40, flagGap + d));
+            document.getElementById('flagGapVal').textContent = flagGap;
+            draw();
+        }
+
+        function toggleMemAlloc() {
+            showMemAlloc = !showMemAlloc;
+            const b = document.getElementById('memAllocBtn');
+            b.textContent = showMemAlloc ? 'Mem Alloc: ON' : 'Mem Alloc: OFF';
+            b.style.background = showMemAlloc ? '#E91E63' : '#455A64';
             draw();
         }
 
@@ -3410,7 +3841,7 @@ ctx.fillText(conn.number.toString(), midX, midY);
             document.getElementById('annoColor').addEventListener('input', (e) => {
                 if (selectedImage) {
                     const k = elKind(selectedImage);
-                    if (k === 'line' || k === 'text') { selectedImage.color = e.target.value; saveState(); draw(); }
+                    if (k === 'line' || k === 'text' || k === 'rect') { selectedImage.color = e.target.value; saveState(); draw(); }
                 }
             });
         })();
@@ -3445,6 +3876,617 @@ ctx.fillText(conn.number.toString(), midX, midY);
             };
             Object.keys(tips).forEach(id => { const el = document.getElementById(id); if (el) el.title = tips[id]; });
             document.querySelectorAll('#controls button').forEach(b => { if (!b.title) b.title = b.textContent.trim(); });
+        })();
+        // ============================================================
+        // 🗂 ASSET BROWSER — every asset, hover a row to see its data
+        // ============================================================
+        function openAssetBrowser() { document.getElementById('assetPanel').style.display = 'flex'; renderAssetBrowser(); }
+        function closeAssetBrowser() { document.getElementById('assetPanel').style.display = 'none'; }
+
+        // Keep the browser in sync with the canvas automatically
+        (function assetAutoRefresh() {
+            let sig = '';
+            setInterval(() => {
+                const p = document.getElementById('assetPanel');
+                if (!p || p.style.display === 'none') return;
+                const s = images.length + '|' + connections.length + '|' + guides.length + '|' + (centerPoint ? 1 : 0) + '|' + (typeof stamps !== 'undefined' ? stamps.length : 0) + '|' + (background ? (background.fileName || '') + background.opacity : '') +
+                    '|' + connections.map(c => c.number + (c.simultaneous ? 'S' : '') + (c.hidden ? 'H' : '')).join(',') +
+                    '|' + images.map(i => (i.name || '') + (i.priority || '') + (i.lastEdited || '') + (i.hidden ? 1 : 0)).join(',');
+                if (s !== sig) { sig = s; renderAssetBrowser(); }
+            }, 500);
+        })();
+
+        function renderAssetBrowser() {
+            const c = document.getElementById('assetPanelContent');
+            if (!c) return;
+            c.innerHTML = '';
+            const esc = (s) => (s == null ? '' : String(s)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            const section = (t, n) => {
+                const h = document.createElement('div');
+                h.style.cssText = 'display:flex;align-items:center;gap:8px;margin:12px 2px 6px;';
+                h.innerHTML = '<span style="font-weight:700;color:#4527a0;font-size:12px;letter-spacing:.4px;text-transform:uppercase;">' + esc(t) + '</span>' +
+                    '<span style="background:#ede7f6;color:#5e35b1;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;">' + n + '</span>' +
+                    '<span style="flex:1;height:1px;background:#eee;"></span>';
+                c.appendChild(h);
+            };
+            const chip = (emoji, bg) => '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:' + bg + ';font-size:16px;flex:0 0 auto;">' + emoji + '</span>';
+            const thumb = (src) => '<img src="' + src + '" style="width:32px;height:32px;object-fit:cover;border-radius:8px;flex:0 0 auto;border:1px solid #ddd;">';
+
+            // Styled hover card
+            const tip = document.getElementById('assetTip');
+            const positionTip = (x, y) => {
+                let lx = x + 16, ly = y + 16;
+                const w = tip.offsetWidth, h = tip.offsetHeight;
+                if (lx + w > window.innerWidth - 8) lx = x - w - 16;
+                if (ly + h > window.innerHeight - 8) ly = Math.max(8, window.innerHeight - h - 8);
+                tip.style.left = Math.max(8, lx) + 'px'; tip.style.top = ly + 'px';
+            };
+            const showTip = (title, iconHTML, pairs, x, y) => {
+                let html = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #ede7f6;">' +
+                    iconHTML + '<span style="font-weight:700;color:#4527a0;font-size:13px;word-break:break-word;">' + esc(title) + '</span></div>';
+                if (!pairs.length) html += '<div style="color:#aaa;font-style:italic;">No data attached</div>';
+                pairs.forEach(([k, v]) => {
+                    const isPri = k === 'Priority';
+                    const vc = isPri ? (PRIORITY_COLORS[String(v).toLowerCase()] || '#222') : '#222';
+                    html += '<div style="display:flex;gap:10px;margin:4px 0;">' +
+                        '<span style="color:#9575cd;min-width:78px;flex:0 0 auto;font-weight:600;">' + esc(k) + '</span>' +
+                        '<span style="color:' + vc + ';font-weight:' + (isPri ? '700' : '400') + ';word-break:break-word;">' + esc(v) + '</span></div>';
+                });
+                tip.innerHTML = html; tip.style.display = 'block'; positionTip(x, y);
+            };
+            const hideTip = () => { tip.style.display = 'none'; };
+
+            const row = (iconHTML, label, subtitle, tipTitle, pairs, onClick, labelColor) => {
+                const r = document.createElement('div');
+                r.style.cssText = 'display:flex;align-items:center;gap:10px;padding:6px 8px;margin:3px 0;border-radius:8px;background:#fafafa;border:1px solid #f0f0f0;cursor:' + (onClick ? 'pointer' : 'default') + ';transition:background .12s,border-color .12s,box-shadow .12s;';
+                r.innerHTML = iconHTML +
+                    '<span style="display:flex;flex-direction:column;min-width:0;flex:1;">' +
+                    '<span style="font-weight:600;color:' + (labelColor || '#222') + ';font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(label) + '</span>' +
+                    (subtitle ? '<span style="font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(subtitle) + '</span>' : '') +
+                    '</span>' +
+                    (pairs && pairs.length ? '<span style="color:#b39ddb;font-size:13px;flex:0 0 auto;">ⓘ</span>' : '');
+                r.addEventListener('mouseenter', (e) => { r.style.background = '#f3edfb'; r.style.borderColor = '#d1c4e9'; r.style.boxShadow = '0 2px 8px rgba(103,58,183,0.12)'; if (pairs) showTip(tipTitle, iconHTML, pairs, e.clientX, e.clientY); });
+                r.addEventListener('mousemove', (e) => { if (pairs && tip.style.display !== 'none') positionTip(e.clientX, e.clientY); });
+                r.addEventListener('mouseleave', () => { r.style.background = '#fafafa'; r.style.borderColor = '#f0f0f0'; r.style.boxShadow = 'none'; hideTip(); });
+                if (onClick) r.addEventListener('click', () => { hideTip(); onClick(); });
+                c.appendChild(r);
+            };
+
+            const dataPairs = (im) => {
+                const P = [];
+                const add = (k, v) => { if (v !== undefined && v !== null && v !== '') P.push([k, v]); };
+                add('Name', im.name); add('Data String', im.fullName); add('Text', im.text); add('Font', im.font);
+                add('File', im.fileName); add('Type', im.fileType); add('Size', im.memSize ? formatBytes(im.memSize) : '');
+                add('Path', im.sourcePath); add('Notation(s)', im.notations); add('La=', im.agent);
+                add('Position', Math.round(im.x) + ', ' + Math.round(im.y));
+                if (im.priority) add('Priority', PRIORITY_LABELS[im.priority]);
+                if (im.lastEdited) add('Last Edited', new Date(im.lastEdited).toLocaleString());
+                add('Memory', formatBytes(elementBytes(im)));
+                if (im.hidden) add('State', 'Hidden');
+                return P;
+            };
+            const selectEl = (im) => { selectedImage = im; const rect = canvas.getBoundingClientRect(); camera.x = rect.width / 2 - im.x * camera.zoom; camera.y = rect.height / 2 - im.y * camera.zoom; updateImageList(); draw(); };
+
+            const imgs = images.filter(i => elKind(i) === 'image');
+            const dots = images.filter(i => elKind(i) === 'dot');
+            const lns = images.filter(i => elKind(i) === 'line');
+            const txts = images.filter(i => elKind(i) === 'text');
+            const rects = images.filter(i => elKind(i) === 'rect');
+
+            // Total memory footprint of the whole canvas
+            let totalBytes = 0;
+            images.forEach(im => totalBytes += elementBytes(im));
+            connections.forEach(cn => totalBytes += objBytes(cn));
+            guides.forEach(g => totalBytes += objBytes(g));
+            if (centerPoint) totalBytes += objBytes(centerPoint);
+            if (background) totalBytes += elementBytes(background);
+            if (images.length || connections.length || guides.length || centerPoint || background) {
+                const tb = document.createElement('div');
+                tb.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#ede7f6;border:1px solid #d1c4e9;border-radius:8px;padding:7px 11px;margin:2px 0 6px;font-size:12px;';
+                tb.innerHTML = '<span style="font-weight:700;color:#4527a0;">💾 Total footprint</span><span style="font-weight:700;color:#222;">' + formatBytes(totalBytes) + '</span>';
+                c.appendChild(tb);
+            }
+
+            if (background) {
+                section('Background', 1);
+                const bic = (background.img && background.img.src) ? thumb(background.img.src) : chip('🌄', '#fff3e0');
+                const bsub = [background.fileType, formatBytes(elementBytes(background)), Math.round(background.opacity * 100) + '%'].filter(Boolean).join(' · ');
+                row(bic, background.name || background.fileName || 'Background', bsub, background.name || 'Background', dataPairs(background), null, PRIORITY_COLORS[background.priority]);
+            }
+
+            if (imgs.length) {
+                section('Images', imgs.length);
+                imgs.forEach(im => {
+                    const ic = (im.img && im.img.src) ? thumb(im.img.src) : chip('🖼', '#e3f2fd');
+                    const sub = [im.fileType, formatBytes(elementBytes(im))].filter(Boolean).join(' · ');
+                    row(ic, im.name || im.fileName || 'Unnamed Image', sub + (im.hidden ? ' · hidden' : ''), im.name || im.fileName || 'Image', dataPairs(im), () => selectEl(im), PRIORITY_COLORS[im.priority]);
+                });
+            }
+            if (dots.length) { section('Primers', dots.length); dots.forEach(im => row(chip('⚫', '#eeeeee'), im.name || 'Unnamed Primer', formatBytes(elementBytes(im)) + (im.hidden ? ' · hidden' : ''), im.name || 'Primer', dataPairs(im), () => selectEl(im), PRIORITY_COLORS[im.priority])); }
+            if (lns.length) { section('Lines', lns.length); lns.forEach(im => row(chip('➖', '#e1f5fe'), im.name || 'Line', formatBytes(elementBytes(im)) + (im.hidden ? ' · hidden' : ''), im.name || 'Line', dataPairs(im), () => selectEl(im), PRIORITY_COLORS[im.priority])); }
+            if (txts.length) { section('Text', txts.length); txts.forEach(im => row(chip('🅣', '#f3e5f5'), im.text || 'Text', (im.font || 'text') + ' · ' + formatBytes(elementBytes(im)) + (im.hidden ? ' · hidden' : ''), im.text || 'Text', dataPairs(im), () => selectEl(im), PRIORITY_COLORS[im.priority])); }
+            if (rects.length) { section('Squares', rects.length); rects.forEach(im => row(chip('▭', '#fff8e1'), im.name || 'Square', Math.round(im.width) + '×' + Math.round(im.height) + ' · ' + formatBytes(elementBytes(im)) + (im.hidden ? ' · hidden' : ''), im.name || 'Square', dataPairs(im), () => selectEl(im), PRIORITY_COLORS[im.priority])); }
+            if (connections.length) {
+                const steps = [...new Set(connections.map(c => c.number))].sort((a, b) => a - b);
+                const counts = {}; connections.forEach(c => counts[c.number] = (counts[c.number] || 0) + 1);
+                const multi = steps.filter(s => counts[s] > 1);
+                const parallelLines = multi.reduce((a, s) => a + counts[s], 0);
+                section('Execution', steps.length + ' steps');
+                const sum = document.createElement('div');
+                sum.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:2px 0 8px;';
+                const stat = (label, val, col) =>
+                    '<div style="background:#fafafa;border:1px solid #f0f0f0;border-left:4px solid ' + col + ';border-radius:7px;padding:6px 9px;">' +
+                    '<div style="font-size:17px;font-weight:700;color:' + col + ';line-height:1.1;">' + val + '</div>' +
+                    '<div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.4px;">' + label + '</div></div>';
+                sum.innerHTML =
+                    stat('Total steps', steps.length, '#5E35B1') +
+                    stat('Logic lines', connections.length, '#2196F3') +
+                    stat('Multithreads', multi.length, '#E91E63') +
+                    stat('Parallel lines', parallelLines, '#00897B');
+                c.appendChild(sum);
+                if (multi.length) {
+                    const chips = document.createElement('div');
+                    chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px;';
+                    chips.innerHTML = multi.map(s =>
+                        '<span style="background:' + (stepColors[s] || '#E91E63') + ';color:#fff;border-radius:11px;padding:2px 9px;font-size:11px;font-weight:700;">Step ' + s + ' ‖ ×' + counts[s] + '</span>').join('');
+                    c.appendChild(chips);
+                }
+                section('Connections', connections.length);
+                const nm = (x) => x ? (x.name || x.text || x.fileName || (x.isDot ? 'Primer' : elKind(x) === 'rect' ? 'Square' : elKind(x) === 'line' ? 'Line' : 'Block')) : '?';
+                const iconFor = (x) => !x ? '•' : (elKind(x) === 'image' ? '🖼' : elKind(x) === 'dot' ? '⚫' : elKind(x) === 'line' ? '➖' : elKind(x) === 'rect' ? '▭' : elKind(x) === 'text' ? '🅣' : '•');
+
+                // Build adjacency (directed) and find roots
+                const byId = new Map(images.map(i => [i.id, i]));
+                const out = new Map(), indeg = new Map();
+                images.forEach(i => { out.set(i.id, []); indeg.set(i.id, 0); });
+                const sorted = [...connections].sort((a, b) => a.number - b.number);
+                sorted.forEach(cn => {
+                    if (!out.has(cn.from) || !byId.has(cn.to)) return;
+                    out.get(cn.from).push(cn);
+                    indeg.set(cn.to, (indeg.get(cn.to) || 0) + 1);
+                });
+                const involved = new Set();
+                sorted.forEach(cn => { involved.add(cn.from); involved.add(cn.to); });
+                const roots = [...involved].filter(id => (indeg.get(id) || 0) === 0);
+                if (!roots.length && involved.size) roots.push(sorted[0].from);
+
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.55;padding:6px 4px;';
+                const seen = new Set();
+
+                const walk = (id, prefix, isLast, isRoot, step, simul) => {
+                    const el = byId.get(id);
+                    const key = id + '|' + prefix;
+                    const line = document.createElement('div');
+                    line.style.cssText = 'white-space:pre;cursor:pointer;border-radius:4px;padding:1px 3px;';
+                    const branch = isRoot ? '' : (isLast ? '└─ ' : '├─ ');
+                    const stepTag = step !== undefined ? '<span style="color:#7e57c2;font-weight:700;">[' + step + (simul ? '‖' : '') + ']</span> ' : '';
+                    const pcol = PRIORITY_COLORS[el && el.priority] || '#222';
+                    line.innerHTML = '<span style="color:#b0bec5;">' + esc(prefix + branch) + '</span>' + stepTag +
+                        '<span>' + iconFor(el) + '</span> <span style="color:' + pcol + ';font-weight:600;">' + esc(nm(el)) + '</span>' +
+                        (el && el.hidden ? '<span style="color:#bbb;"> · hidden</span>' : '');
+                    if (el) {
+                        line.addEventListener('mouseenter', (ev) => { line.style.background = '#f3edfb'; showTip(nm(el), iconFor(el), dataPairs(el), ev.clientX, ev.clientY); });
+                        line.addEventListener('mousemove', (ev) => positionTip(ev.clientX, ev.clientY));
+                        line.addEventListener('mouseleave', () => { line.style.background = 'transparent'; hideTip(); });
+                        line.addEventListener('click', () => { hideTip(); selectEl(el); });
+                    }
+                    wrap.appendChild(line);
+
+                    if (seen.has(key)) return;
+                    seen.add(key);
+                    const kids = out.get(id) || [];
+                    kids.forEach((cn, i) => {
+                        const last = i === kids.length - 1;
+                        const nextPrefix = prefix + (isRoot ? '' : (isLast ? '   ' : '│  '));
+                        walk(cn.to, nextPrefix, last, false, cn.number, cn.simultaneous);
+                    });
+                };
+
+                roots.forEach(r => walk(r, '', true, true));
+                c.appendChild(wrap);
+            }
+            if (guides.length) {
+                section('Rulers', guides.length);
+                guides.filter(g => g.axis === 'h').forEach(g => row(chip('↔', '#e3f2fd'), 'Horizontal Ruler', 'y = ' + Math.round(g.pos) + ' · ' + formatBytes(objBytes(g)), 'Horizontal Ruler', [['Axis', 'Horizontal'], ['y', Math.round(g.pos)], ['Memory', formatBytes(objBytes(g))]]));
+                guides.filter(g => g.axis === 'v').forEach(g => row(chip('↕', '#e3f2fd'), 'Vertical Ruler', 'x = ' + Math.round(g.pos) + ' · ' + formatBytes(objBytes(g)), 'Vertical Ruler', [['Axis', 'Vertical'], ['x', Math.round(g.pos)], ['Memory', formatBytes(objBytes(g))]]));
+            }
+            if (centerPoint) { section('Center Anchor', 1); row(chip('🎯', '#ffebee'), 'Center', 'x ' + Math.round(centerPoint.x) + ', y ' + Math.round(centerPoint.y) + ' · ' + formatBytes(objBytes(centerPoint)), 'Center Anchor', [['x', Math.round(centerPoint.x)], ['y', Math.round(centerPoint.y)], ['Memory', formatBytes(objBytes(centerPoint))]]); }
+
+            if (typeof stamps !== 'undefined' && stamps.length) {
+                section('Time Stamps', stamps.length);
+                [...stamps].reverse().forEach(s => {
+                    const d = new Date(s.at);
+                    const P = [['Time', d.toLocaleTimeString()], ['Date', d.toLocaleDateString()], ['Stopwatch', s.lap], ['Timer', s.running ? 'Running' : 'Stopped']];
+                    if (s.note) P.unshift(['Note', s.note]);
+                    row(chip('⏱', '#ede7f6'), s.note || d.toLocaleTimeString(), d.toLocaleString() + ' · SW ' + s.lap, 'Time Stamp', P, null, '#5E35B1');
+                });
+            }
+
+            if (!images.length && !connections.length && !guides.length && !centerPoint && !background) {
+                const e = document.createElement('div'); e.style.cssText = 'color:#aaa;padding:28px 16px;text-align:center;font-size:13px;'; e.innerHTML = '🗂<br><br>Nothing on the canvas yet.'; c.appendChild(e);
+            }
+
+            // Read-only footer: OTOM app size, all assets, and the combined total
+            const appBytes = (() => { try { return new Blob([document.documentElement.outerHTML]).size; } catch (e) { return 0; } })();
+            const line = (label, val, accent) => '<div style="display:flex;justify-content:space-between;margin:2px 0;' + (accent ? 'border-top:1px solid #e0d7f0;margin-top:4px;padding-top:4px;' : '') + '"><span style="color:' + (accent ? '#4527a0' : '#888') + ';font-weight:' + (accent ? '700' : '400') + ';">' + label + '</span><span style="font-weight:700;color:' + (accent ? '#4527a0' : '#222') + ';">' + formatBytes(val) + '</span></div>';
+            document.getElementById('assetPanelFooter').innerHTML =
+                line('🧩 OTOM application', appBytes, false) +
+                line('📦 All assets', totalBytes, false) +
+                line('Σ App + Assets', appBytes + totalBytes, true);
+        }
+
+        (function assetPanelDrag() {
+            const p = document.getElementById('assetPanel'), h = document.getElementById('assetPanelHeader');
+            let dragging = false, sx = 0, sy = 0;
+            h.addEventListener('mousedown', (e) => { if (e.target.tagName === 'BUTTON') return; dragging = true; const r = p.getBoundingClientRect(); sx = e.clientX - r.left; sy = e.clientY - r.top; e.preventDefault(); });
+            document.addEventListener('mousemove', (e) => { if (dragging) { p.style.left = Math.max(0, Math.min(e.clientX - sx, window.innerWidth - 120)) + 'px'; p.style.top = Math.max(0, Math.min(e.clientY - sy, window.innerHeight - 60)) + 'px'; } });
+            document.addEventListener('mouseup', () => dragging = false);
+        })();
+        // ⋮ Vertical dock: relocate the real controls into a draggable panel
+        let verticalUI = false;
+        function toggleVerticalUI() {
+            verticalUI = !verticalUI;
+            const controls = document.getElementById('controls');
+            const vpanel = document.getElementById('vpanel');
+            const vc = document.getElementById('vpanelContent');
+            if (verticalUI) {
+                while (controls.firstChild) vc.appendChild(controls.firstChild);
+                controls.style.display = 'none';
+                vpanel.style.display = 'flex';
+            } else {
+                while (vc.firstChild) controls.appendChild(vc.firstChild);
+                controls.style.display = 'block';
+                vpanel.style.display = 'none';
+            }
+        }
+        function setVpanelOpacity(o) { document.getElementById('vpanel').style.opacity = o; }
+
+        (function vpanelDrag() {
+            const p = document.getElementById('vpanel'), h = document.getElementById('vpanelHeader');
+            let dragging = false, sx = 0, sy = 0;
+            h.addEventListener('mousedown', (e) => { if (e.target.tagName === 'BUTTON') return; dragging = true; const r = p.getBoundingClientRect(); sx = e.clientX - r.left; sy = e.clientY - r.top; e.preventDefault(); });
+            document.addEventListener('mousemove', (e) => { if (dragging) { p.style.left = Math.max(0, Math.min(e.clientX - sx, window.innerWidth - 120)) + 'px'; p.style.top = Math.max(0, Math.min(e.clientY - sy, window.innerHeight - 60)) + 'px'; } });
+            document.addEventListener('mouseup', () => dragging = false);
+        })();
+        (function nameModalDrag() {
+            const h = document.getElementById('nameModalHeader');
+            let dragging = false, sx = 0, sy = 0;
+            h.addEventListener('mousedown', (e) => {
+                dragging = true;
+                const r = nameModal.getBoundingClientRect();
+                sx = e.clientX - r.left; sy = e.clientY - r.top;
+                nameModal.style.transform = 'none';
+                nameModal.style.left = r.left + 'px';
+                nameModal.style.top = r.top + 'px';
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                nameModal.style.left = Math.max(0, Math.min(e.clientX - sx, window.innerWidth - 120)) + 'px';
+                nameModal.style.top = Math.max(0, Math.min(e.clientY - sy, window.innerHeight - 50)) + 'px';
+            });
+            document.addEventListener('mouseup', () => dragging = false);
+        })();
+        // ============================================================
+        // 🕘 CLOCK + STOPWATCH
+        // ============================================================
+        let clockOn = false, swRunning = false, swStart = 0, swElapsed = 0;
+        let stamps = [];
+
+        function addStamp() {
+            const noteEl = document.getElementById('stampNote');
+            const note = (noteEl.value || '').trim();
+            const el = swElapsed + (swRunning ? performance.now() - swStart : 0);
+            const t = el / 1000;
+            const lap = String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0') + '.' + Math.floor((t * 10) % 10);
+            stamps.push({ id: Date.now() + Math.random(), at: Date.now(), lap, note, running: swRunning });
+            noteEl.value = '';
+            const b = document.getElementById('stampBtn');
+            b.textContent = '✓ Stamped'; b.style.background = '#43A047';
+            setTimeout(() => { b.textContent = 'Stamp'; b.style.background = '#7E57C2'; }, 900);
+            if (document.getElementById('assetPanel').style.display !== 'none') renderAssetBrowser();
+        }
+
+        (function buildDial() {
+            const ticks = document.getElementById('cTicks'), nums = document.getElementById('cNums');
+            if (!ticks) return;
+            for (let i = 0; i < 60; i++) {
+                const a = (i * 6) * Math.PI / 180, big = i % 5 === 0;
+                const r1 = big ? 72 : 77, r2 = 82;
+                const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                l.setAttribute('x1', 100 + Math.sin(a) * r1); l.setAttribute('y1', 100 - Math.cos(a) * r1);
+                l.setAttribute('x2', 100 + Math.sin(a) * r2); l.setAttribute('y2', 100 - Math.cos(a) * r2);
+                l.setAttribute('stroke', big ? '#eceff1' : '#5b6b75');
+                l.setAttribute('stroke-width', big ? 2.4 : 1);
+                l.setAttribute('stroke-linecap', 'round');
+                ticks.appendChild(l);
+            }
+            for (let h = 1; h <= 12; h++) {
+                const a = (h * 30) * Math.PI / 180;
+                const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                t.setAttribute('x', 100 + Math.sin(a) * 60); t.setAttribute('y', 100 - Math.cos(a) * 60 + 5);
+                t.setAttribute('text-anchor', 'middle'); t.setAttribute('fill', '#cfd8dc');
+                t.setAttribute('font-family', 'Georgia,serif'); t.setAttribute('font-size', '14');
+                t.textContent = h;
+                nums.appendChild(t);
+            }
+        })();
+
+        function toggleClock() {
+            clockOn = !clockOn;
+            document.getElementById('clockPanel').style.display = clockOn ? 'flex' : 'none';
+            const b = document.getElementById('clockBtn');
+            b.style.background = clockOn ? '#00897B' : '#263238';
+        }
+        function setClockOpacity(v) { document.getElementById('clockPanel').style.opacity = v / 100; }
+
+        function swStartStop() {
+            const b = document.getElementById('swBtn');
+            if (swRunning) { swElapsed += performance.now() - swStart; swRunning = false; b.textContent = 'Start'; b.style.background = '#00897B'; }
+            else { swStart = performance.now(); swRunning = true; b.textContent = 'Stop'; b.style.background = '#E53935'; }
+        }
+        function swReset() {
+            swRunning = false; swElapsed = 0;
+            const b = document.getElementById('swBtn'); b.textContent = 'Start'; b.style.background = '#00897B';
+            document.getElementById('swText').textContent = '00:00.0';
+        }
+
+        (function clockLoop() {
+            if (clockOn) {
+                const now = new Date();
+                const ms = now.getMilliseconds() / 1000;
+                const s = now.getSeconds() + ms, m = now.getMinutes() + s / 60, h = (now.getHours() % 12) + m / 60;
+                document.getElementById('cSec').setAttribute('transform', 'rotate(' + (s * 6) + ' 100 100)');
+                document.getElementById('cMin').setAttribute('transform', 'rotate(' + (m * 6) + ' 100 100)');
+                document.getElementById('cHour').setAttribute('transform', 'rotate(' + (h * 30) + ' 100 100)');
+                document.getElementById('cDate').textContent =
+                    now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase() +
+                    '   ' + now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                const el = swElapsed + (swRunning ? performance.now() - swStart : 0);
+                const t = el / 1000, mm = Math.floor(t / 60), ss = Math.floor(t % 60), ts = Math.floor((t * 10) % 10);
+                document.getElementById('swText').textContent =
+                    String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0') + '.' + ts;
+            }
+            requestAnimationFrame(clockLoop);
+        })();
+
+        (function clockDrag() {
+            const p = document.getElementById('clockPanel'), h = document.getElementById('clockDragBar');
+            let dragging = false, sx = 0, sy = 0;
+            h.addEventListener('mousedown', (e) => {
+                dragging = true;
+                const r = p.getBoundingClientRect();
+                sx = e.clientX - r.left; sy = e.clientY - r.top;
+                p.style.right = 'auto'; p.style.bottom = 'auto';
+                p.style.left = r.left + 'px'; p.style.top = r.top + 'px';
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                p.style.left = Math.max(0, Math.min(e.clientX - sx, window.innerWidth - 120)) + 'px';
+                p.style.top = Math.max(0, Math.min(e.clientY - sy, window.innerHeight - 80)) + 'px';
+            });
+            document.addEventListener('mouseup', () => dragging = false);
+        })();
+        // ============================================================
+        // 📊 PERFORMANCE MONITOR — instrument draw(), then report everything
+        // ============================================================
+        let perfOn = false;
+        const PERF = { draws: 0, drawMs: 0, lastDrawMs: 0, maxDrawMs: 0, frames: 0, fps: 0, minFps: 999, maxFps: 0, hist: [], drawHist: [], started: performance.now(), longFrames: 0 };
+        (function instrumentDraw() {
+            const orig = window.draw;
+            if (typeof orig !== 'function') return;
+            window.draw = function () {
+                const t0 = performance.now();
+                orig.apply(this, arguments);
+                const dt = performance.now() - t0;
+                PERF.draws++; PERF.drawMs += dt; PERF.lastDrawMs = dt;
+                if (dt > PERF.maxDrawMs) PERF.maxDrawMs = dt;
+                if (dt > 16.7) PERF.longFrames++;
+                PERF.drawHist.push(dt); if (PERF.drawHist.length > 120) PERF.drawHist.shift();
+            };
+        })();
+
+        function togglePerf() {
+            perfOn = !perfOn;
+            document.getElementById('perfPanel').style.display = perfOn ? 'flex' : 'none';
+            document.getElementById('perfBtn').style.background = perfOn ? '#8957e5' : '#263238';
+        }
+        function setPerfOpacity(v) { document.getElementById('perfPanel').style.opacity = v / 100; }
+
+        function flushCache() {
+            const before = (performance.memory ? performance.memory.usedJSHeapSize : 0);
+            historyStack = []; historyIndex = -1;
+            PERF.hist = []; PERF.drawHist = []; PERF.draws = 0; PERF.drawMs = 0; PERF.maxDrawMs = 0; PERF.longFrames = 0;
+            PERF.minFps = 999; PERF.maxFps = 0;
+            images.forEach(i => { delete i._glow; delete i._bAlpha; });
+            flagRects = [];
+            if (window.caches && caches.keys) caches.keys().then(k => k.forEach(n => caches.delete(n)));
+            try { if (window.gc) window.gc(); } catch (e) {}
+            saveState();
+            setTimeout(() => {
+                const after = (performance.memory ? performance.memory.usedJSHeapSize : 0);
+                const freed = Math.max(0, before - after);
+                alert('🧹 Cache flushed\n\nUndo history cleared\nPerf buffers reset\nAnimation caches dropped' + (before ? '\n\nHeap before: ' + formatBytes(before) + '\nHeap after:  ' + formatBytes(after) + '\nReclaimed:   ' + formatBytes(freed) : ''));
+            }, 120);
+        }
+
+        (function perfLoop() {
+            let last = performance.now(), acc = 0, fCount = 0;
+            function tick(now) {
+                const dt = now - last; last = now;
+                acc += dt; fCount++; PERF.frames++;
+                if (acc >= 500) {
+                    PERF.fps = Math.round((fCount * 1000) / acc);
+                    if (PERF.fps < PERF.minFps) PERF.minFps = PERF.fps;
+                    if (PERF.fps > PERF.maxFps) PERF.maxFps = PERF.fps;
+                    PERF.hist.push(PERF.fps); if (PERF.hist.length > 120) PERF.hist.shift();
+                    acc = 0; fCount = 0;
+                    if (perfOn) renderPerf();
+                }
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        })();
+
+        function renderPerf() {
+            // ---- data collection ----
+            const M = performance.memory;
+            const kinds = {};
+            images.forEach(i => { const k = elKind(i); kinds[k] = (kinds[k] || 0) + 1; });
+            let pxBytes = 0, fileBytes = 0, dataBytes = 0;
+            images.forEach(i => {
+                if (i.img && i.img.naturalWidth) pxBytes += i.img.naturalWidth * i.img.naturalHeight * 4;
+                fileBytes += (i.memSize || 0);
+                dataBytes += objBytes(i, 'img');
+            });
+            if (background && background.img) { pxBytes += (background.img.naturalWidth || 0) * (background.img.naturalHeight || 0) * 4; fileBytes += background.memSize || 0; }
+            let connBytes = 0; connections.forEach(c => connBytes += objBytes(c));
+            let guideBytes = 0; guides.forEach(x => guideBytes += objBytes(x));
+            let histBytes = 0; try { histBytes = new Blob([JSON.stringify(historyStack)]).size; } catch (e) {}
+            const hidden = images.filter(i => i.hidden).length;
+            const withPri = images.filter(i => i.priority).length;
+            const withNotes = images.filter(i => i.notations).length;
+            const withAgent = images.filter(i => i.agent).length;
+            const t = performance.timing || {};
+            const nav = performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+            const up = (performance.now() - PERF.started) / 1000;
+            const flags = { intersectFX, proximityGlow, proximityBorder, hoverPreviewEnabled, hiddenRadar, elementRadar, rulerRadar, rulerDims, elemDimElem, elemDimRuler, centerDims, dimEdge, showMemInfo, showPath, showFilename, showNotations, showAgent, showMemAlloc, connectMode, simultaneousMode, lineMode, textMode, rectMode, bgMoveMode, centerMode, verticalUI, clockOn, perfOn };
+            const onFlags = Object.keys(flags).filter(k => flags[k]);
+            const loops = [intersectFX && 'intersectFX', (proximityGlow || proximityBorder) && 'proximity', anyPriorityShown() && 'priorityDash', 'perfLoop', 'clockLoop'].filter(Boolean);
+
+            const S = (t) => '<div style="color:#58a6ff;font-weight:bold;margin:9px 0 3px;border-bottom:1px solid #21262d;padding-bottom:2px;">' + t + '</div>';
+            const R = (k, v, c) => '<div style="display:flex;justify-content:space-between;gap:14px;padding:1px 0;"><span style="color:#8b949e;flex:0 0 auto;white-space:nowrap;">' + k + '</span><span style="color:' + (c || '#c9d1d9') + ';text-align:right;flex:1 1 auto;word-break:break-word;">' + v + '</span></div>';
+            const pct = (a, b) => b ? ((a / b) * 100).toFixed(1) + '%' : '—';
+            const fpsColor = PERF.fps >= 55 ? '#3fb950' : PERF.fps >= 30 ? '#d29922' : '#f85149';
+
+            let h = '';
+            h += S('⚡ RENDER');
+            h += R('FPS (now / min / max)', PERF.fps + ' / ' + (PERF.minFps === 999 ? '—' : PERF.minFps) + ' / ' + PERF.maxFps, fpsColor);
+            h += R('Frame budget', (1000 / Math.max(1, PERF.fps)).toFixed(2) + ' ms / 16.67 ms');
+            h += R('draw() last', PERF.lastDrawMs.toFixed(3) + ' ms');
+            h += R('draw() avg', (PERF.draws ? PERF.drawMs / PERF.draws : 0).toFixed(3) + ' ms');
+            h += R('draw() peak', PERF.maxDrawMs.toFixed(3) + ' ms', PERF.maxDrawMs > 16.7 ? '#f85149' : '#c9d1d9');
+            h += R('draw() calls', PERF.draws.toLocaleString());
+            h += R('Total draw time', (PERF.drawMs / 1000).toFixed(2) + ' s');
+            h += R('Frames > 16.7ms', PERF.longFrames.toLocaleString(), PERF.longFrames ? '#d29922' : '#3fb950');
+            h += R('Total frames', PERF.frames.toLocaleString());
+            h += R('Uptime', up.toFixed(1) + ' s');
+            h += R('Active RAF loops', loops.length + ' (' + loops.join(', ') + ')');
+
+            h += S('🧠 JS HEAP');
+            if (M) {
+                h += R('Used', formatBytes(M.usedJSHeapSize), M.usedJSHeapSize / M.jsHeapSizeLimit > 0.8 ? '#f85149' : '#3fb950');
+                h += R('Allocated', formatBytes(M.totalJSHeapSize));
+                h += R('Limit', formatBytes(M.jsHeapSizeLimit));
+                h += R('Used / Limit', pct(M.usedJSHeapSize, M.jsHeapSizeLimit));
+                h += R('Headroom', formatBytes(M.jsHeapSizeLimit - M.usedJSHeapSize));
+            } else h += R('performance.memory', 'unavailable (non-Chromium)', '#d29922');
+
+            h += S('🖼 CANVAS');
+            h += R('Backing store', canvas.width + ' × ' + canvas.height + ' px');
+            h += R('Pixel buffer', formatBytes(canvas.width * canvas.height * 4));
+            h += R('Device pixel ratio', (window.devicePixelRatio || 1).toFixed(2));
+            h += R('Zoom', Math.round(camera.zoom * 100) + '%');
+            h += R('Camera', Math.round(camera.x) + ', ' + Math.round(camera.y));
+            h += R('Grid lines drawn', Math.ceil(canvas.width / camera.zoom / 100) + Math.ceil(canvas.height / camera.zoom / 100));
+            h += R('Flag rects/frame', (flagRects ? flagRects.length : 0));
+
+            h += S('📦 SCENE GRAPH');
+            h += R('Elements total', images.length);
+            Object.keys(kinds).sort().forEach(k => h += R('· ' + k, kinds[k]));
+            h += R('Connections', connections.length);
+            h += R('Simultaneous steps', connections.filter(c => c.simultaneous).length);
+            h += R('Curved lines', connections.filter(c => c.curved).length);
+            h += R('Rulers (H/V)', guides.filter(g => g.axis === 'h').length + ' / ' + guides.filter(g => g.axis === 'v').length);
+            h += R('Center anchor', centerPoint ? 'set' : 'none');
+            h += R('Background', background ? (background.fileName || 'loaded') : 'none');
+            h += R('Time stamps', (typeof stamps !== 'undefined' ? stamps.length : 0));
+            h += R('Hidden elements', hidden);
+            h += R('With priority', withPri);
+            h += R('With notations', withNotes);
+            h += R('With La= agent', withAgent);
+
+            h += S('💾 MEMORY BREAKDOWN');
+            h += R('Decoded pixels (RGBA)', formatBytes(pxBytes), pxBytes > 5e7 ? '#d29922' : '#c9d1d9');
+            h += R('Source file bytes', formatBytes(fileBytes));
+            h += R('Element metadata', formatBytes(dataBytes));
+            h += R('Connections', formatBytes(connBytes));
+            h += R('Rulers', formatBytes(guideBytes));
+            h += R('Undo history', formatBytes(histBytes), histBytes > 2e7 ? '#f85149' : '#c9d1d9');
+            h += R('History depth', historyStack.length + ' / ' + MAX_HISTORY + '  (idx ' + historyIndex + ')');
+            h += R('Scene subtotal', formatBytes(pxBytes + fileBytes + dataBytes + connBytes + guideBytes));
+
+            h += S('🌳 DOM');
+            h += R('Total nodes', document.getElementsByTagName('*').length);
+            h += R('Buttons', document.querySelectorAll('button').length);
+            h += R('Inputs', document.querySelectorAll('input,select,textarea').length);
+            h += R('Canvases', document.querySelectorAll('canvas').length);
+            h += R('SVG nodes', document.querySelectorAll('svg *').length);
+            h += R('Document bytes', formatBytes(new Blob([document.documentElement.outerHTML]).size));
+
+            h += S('🎛 ACTIVE FLAGS (' + onFlags.length + ')');
+            h += '<div style="color:#3fb950;word-break:break-word;">' + (onFlags.length ? onFlags.join(' · ') : '<span style="color:#8b949e;">none</span>') + '</div>';
+
+            h += S('⏱ PAGE TIMING');
+            if (nav) {
+                h += R('DOM interactive', nav.domInteractive.toFixed(0) + ' ms');
+                h += R('DOM complete', nav.domComplete.toFixed(0) + ' ms');
+                h += R('Load event', nav.loadEventEnd.toFixed(0) + ' ms');
+                h += R('Transfer size', formatBytes(nav.transferSize || 0));
+                h += R('Decoded size', formatBytes(nav.decodedBodySize || 0));
+            } else if (t.navigationStart) {
+                h += R('DOM ready', (t.domContentLoadedEventEnd - t.navigationStart) + ' ms');
+                h += R('Full load', (t.loadEventEnd - t.navigationStart) + ' ms');
+            }
+            h += R('Resources loaded', performance.getEntriesByType ? performance.getEntriesByType('resource').length : '—');
+
+            h += S('🖥 ENVIRONMENT');
+            h += R('CPU cores', navigator.hardwareConcurrency || '—');
+            h += R('Device memory', (navigator.deviceMemory ? navigator.deviceMemory + ' GB' : '—'));
+            h += R('Screen', screen.width + ' × ' + screen.height + ' @' + screen.colorDepth + 'bit');
+            h += R('Viewport', window.innerWidth + ' × ' + window.innerHeight);
+            h += R('Online', navigator.onLine ? 'yes' : 'no', navigator.onLine ? '#3fb950' : '#f85149');
+            if (navigator.connection) {
+                h += R('Network', navigator.connection.effectiveType + ' · ' + (navigator.connection.downlink || '?') + ' Mb/s');
+                h += R('RTT', (navigator.connection.rtt || 0) + ' ms');
+            }
+            h += R('Platform', navigator.platform || '—');
+            h += R('Language', navigator.language);
+            h += R('Cookies enabled', navigator.cookieEnabled ? 'yes' : 'no');
+            h += R('Fullscreen', document.fullscreenElement ? 'yes' : 'no');
+            h += R('Visibility', document.visibilityState);
+            h += R('Storage est.', perfStorage);
+
+            document.getElementById('perfBody').innerHTML = h;
+        }
+
+        let perfStorage = 'querying…';
+        if (navigator.storage && navigator.storage.estimate) {
+            navigator.storage.estimate().then(e => { perfStorage = formatBytes(e.usage || 0) + ' / ' + formatBytes(e.quota || 0); }).catch(() => { perfStorage = '—'; });
+        } else perfStorage = 'unavailable';
+
+        (function perfDrag() {
+            const p = document.getElementById('perfPanel'), hh = document.getElementById('perfHeader');
+            let dx = 0, dy = 0;
+            const move = (e) => {
+                p.style.left = Math.max(0, Math.min(e.clientX - dx, window.innerWidth - 140)) + 'px';
+                p.style.top = Math.max(0, Math.min(e.clientY - dy, window.innerHeight - 60)) + 'px';
+            };
+            const up = () => { hh.style.cursor = 'grab'; window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+            hh.addEventListener('pointerdown', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                const r = p.getBoundingClientRect();
+                dx = e.clientX - r.left; dy = e.clientY - r.top;
+                p.style.right = 'auto'; p.style.bottom = 'auto';
+                p.style.left = r.left + 'px'; p.style.top = r.top + 'px';
+                hh.style.cursor = 'grabbing';
+                window.addEventListener('pointermove', move);
+                window.addEventListener('pointerup', up);
+                e.preventDefault();
+            });
         })();
     </script>
 </body>
